@@ -15,14 +15,13 @@ pub fn get_all_files_in_dir(path: &Path) -> Result<Box<HashMap<String, String>>,
 
     for entry in read_dir(path)? {
         let file_path = entry?.path();
-
         if file_path.is_file() {
             let filename = file_path.to_str();
             if filename.is_none() {
-                return error("Provided path is no directory");
+                return error(format!("Filename of the file : {:?} no valid utf-8", file_path).as_str());
             };
             let filename = filename.unwrap();
-            result.insert(filename.to_string(), read_to_string(path)?);
+            result.insert(filename.to_string(), read_to_string(file_path)?);
         } else {
             // todo add recursive visiting
         }
