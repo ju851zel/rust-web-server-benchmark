@@ -3,6 +3,7 @@ use std::thread;
 use std::io::prelude::*;
 use std::net::TcpListener;
 use std::net::TcpStream;
+use crate::requests::Request;
 
 
 /// Starts the server listening on the address,
@@ -33,8 +34,9 @@ fn handle_connection(mut stream: TcpStream) {
     let response = "HTTP/1.1 200 OK\r\n\r\nhello";
 
     stream.read(&mut buffer).unwrap();
-    println!("Request came in,sending response {:?}", String::from_utf8(buffer.to_vec()));
-    println!("Request came in,sending response {}", response);
+    let buffer = String::from_utf8(buffer.to_vec());
+    let first_line = Request::get_first_line(&buffer.unwrap());
+    println!("Request came in,sending response {:?}", first_line);
 
     stream.write(response.as_bytes()).unwrap();
     stream.flush().unwrap();
