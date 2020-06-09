@@ -29,10 +29,11 @@ pub fn start_server(address: &str, thread_pool_size: usize) {
 
 
 fn handle_connection(mut stream: TcpStream) {
-    let mut buffer = [0; 512];
+    let mut buffer = [0; 2048];
     let response = "HTTP/1.1 200 OK\r\n\r\nhello";
 
     stream.read(&mut buffer).unwrap();
+    println!("Request came in,sending response {:?}", String::from_utf8(buffer.to_vec()));
     println!("Request came in,sending response {}", response);
 
     stream.write(response.as_bytes()).unwrap();
@@ -64,7 +65,6 @@ impl ThreadPool {
     pub fn execute<F>(&self, f: F)
         where F: FnOnce() + Send + 'static {
         let job = Box::new(f);
-
         self.transmitter.send(job).unwrap();
     }
 }
