@@ -9,10 +9,20 @@ pub struct Request {
 }
 
 impl Request {
-    pub fn get_first_line(request: &str) -> Result<StartLine, String> {
-        let error = "Could not parse request. Wrong Format".to_string();
+    pub fn read_request(buffer: &str) -> Result<Request, String> {
+        let lines: Vec<&str> = buffer.split("\r\n").collect();
+        let start_line = Request::get_first_line(&lines)?;
+        let headers = Request::get_headers(&lines.into_iter().skip(1).collect())?;
+        let headers = Request::remove_empty(headers);
 
-        let lines: Vec<&str> = request.split("\r\n").collect();
+        Ok(Request {
+            start_line,
+            headers,
+            body: "".to_string(), //todo change to real implementation
+        })
+    }
+    fn get_first_line(lines: &Vec<&str>) -> Result<StartLine, String> {
+        let error = "Could not parse request. Wrong Format".to_string();
         let first_line = match lines.get(0) {
             Some(line) => line,
             None => return Err(error),
@@ -40,6 +50,30 @@ impl Request {
             version: req_version.to_string(),
         })
     }
+
+    fn get_headers(lines: &Vec<&str>) -> Result<HashMap<String, String>, String> {
+        let error = "Could not parse request. Wrong Format".to_string();
+        let mut map = HashMap::new();
+        for line in lines {
+            let line_contents: Vec<&str> = line.split(": ").collect();
+            let key = match line_contents.first() {
+                Some(key) => key,
+                None => return Err(format!("Could not parse request. The header value: ${}, does not conform to the http protocol", line)),
+            };
+            let value = line_contents.iter()
+                .skip(1)
+                .map(|s| *s)
+                .collect::<Vec<&str>>().join("");
+            map.insert(key.to_string(), value);
+        };
+        Ok(map)
+    }
+
+    fn remove_empty(headers: HashMap<String, String>) -> HashMap<String, String> {
+        headers.into_iter()
+            .filter(|line| !(*line).0.is_empty() && !(*line).1.is_empty())
+            .collect()
+    }
 }
 
 #[derive(Debug)]
@@ -57,5 +91,18 @@ pub struct StartLine {
 }
 
 
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-
+    #[test]
+    fn remove_empty_test() {
+        let mut request: HashMap<String,String> = HashMap::new();
+        request.insert("Host".to_string(), "localhost:8000".to_string());
+        request.insert("".to_string(), "".to_string());
+        request.insert("".to_string(), "Test".to_string());
+        request.insert("Test".to_string(), "".to_string());
+        let request = Request::remove_empty(request);
+        assert_eq!(request.len(), 1)
+    }
+}

@@ -35,8 +35,10 @@ fn handle_connection(mut stream: TcpStream) {
 
     stream.read(&mut buffer).unwrap();
     let buffer = String::from_utf8(buffer.to_vec());
-    let first_line = Request::get_first_line(&buffer.unwrap());
-    println!("Request came in,sending response {:?}", first_line);
+    println!("Request came in, request: {:#?}", &buffer);
+    let request = Request::read_request(&buffer.unwrap());
+    println!("Request came in, request: {:#?}", request);
+    // println!("Request came in, body: {:#?}", first_line);
 
     stream.write(response.as_bytes()).unwrap();
     stream.flush().unwrap();
