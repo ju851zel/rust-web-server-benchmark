@@ -8,8 +8,8 @@ use std::path::Path;
 ///
 /// Returns a map consisting of all the files in the root level of the provided dir
 /// More specific return a hashmap containing the filename as key and the file content as utf-8 value
-pub fn get_all_files_in_dir(path: &Path) -> Result<Box<HashMap<String, String>>, IoError> {
-    let mut result = Box::new(HashMap::with_capacity(8));
+pub fn get_all_files_in_dir(path: &Path) -> Result<HashMap<String, String>, IoError> {
+    let mut result = HashMap::with_capacity(8);
 
     if !path.is_dir() { return error("Provided path is no directory"); }
 
@@ -30,7 +30,7 @@ pub fn get_all_files_in_dir(path: &Path) -> Result<Box<HashMap<String, String>>,
 }
 
 /// Helper function to wrap a string as error, in order to use ? operator in other functions
-fn error(message: &str) -> Result<Box<HashMap<String, String>>, Error> {
+fn error(message: &str) -> Result<HashMap<String, String>, Error> {
     return Result::Err(IoError::new(ErrorKind::Other, message));
 }
 

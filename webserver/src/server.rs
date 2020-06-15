@@ -66,9 +66,9 @@ impl ThreadPool {
         Ok(ThreadPool { workers, transmitter: tx })
     }
 
-    pub fn execute<F>(&self, f: F)
+    pub fn execute<F>(&self, function: F)
         where F: FnOnce() + Send + 'static {
-        let job = Box::new(f);
+        let job = Box::new(function);
         self.transmitter.send(job).unwrap();
     }
 }
