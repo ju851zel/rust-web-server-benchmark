@@ -3,9 +3,9 @@ use std::collections::HashMap;
 //todo change below to better implementation
 #[derive(Debug)]
 pub struct Request {
-    start_line: StartLine,
-    headers: HashMap<String, String>,
-    body: String,
+    pub start_line: StartLine,
+    pub headers: HashMap<String, String>,
+    pub body: String,
 }
 
 impl Request {
@@ -85,9 +85,9 @@ pub enum RequestType {
 
 #[derive(Debug)]
 pub struct StartLine {
-    method: RequestType,
-    path: String,
-    version: String,
+    pub method: RequestType,
+    pub path: String,
+    pub version: String,
 }
 
 
