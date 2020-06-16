@@ -39,7 +39,7 @@ fn handle_connection(mut stream: TcpStream, dir: Arc<HashMap<String, String>>) {
     stream.read(&mut buffer).unwrap();
     let buffer = String::from_utf8(buffer.to_vec());
     let request = Request::read_request(&buffer.unwrap());
-    // println!("Request came in, request: {:#?}", request);
+    println!("Request came in, request: {:#?}", request);
     let path = match request {
         Ok(request) => request.start_line.path,
         Err(err) => {
