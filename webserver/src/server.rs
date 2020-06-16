@@ -4,11 +4,13 @@ use std::io::prelude::*;
 use std::net::TcpListener;
 use std::net::TcpStream;
 use crate::requests::Request;
+use std::collections::HashMap;
+use std::collections::hash_map::RandomState;
 
 
 /// Starts the server listening on the address,
 /// with the amount of threads provided by thread_pool_size.
-pub fn start_server(address: &str, thread_pool_size: usize) {
+pub fn start_server(address: &str, thread_pool_size: usize, dir: Arc<HashMap<String, String>>) {
     let pool = match ThreadPool::new(thread_pool_size) {
         Ok(pool) => pool,
         Err(err) => panic!(err)
@@ -18,27 +20,41 @@ pub fn start_server(address: &str, thread_pool_size: usize) {
         Ok(listener) => listener,
         Err(err) => panic!(err)
     };
-
     println!("Listening for incoming requests on {}", address);
     for stream in listener.incoming() {
         let connection = stream.unwrap();
+        let dir = dir.clone();
         pool.execute(|| {
-            handle_connection(connection);
+            handle_connection(connection, dir);
         });
     }
 }
 
 
-fn handle_connection(mut stream: TcpStream) {
+fn handle_connection(mut stream: TcpStream, dir: Arc<HashMap<String, String>>) {
     let mut buffer = [0; 2048];
-    let response = "HTTP/1.1 200 OK\r\n\r\nhello";
+    let response200 = "HTTP/1.1 200 OK\r\n\r\n";
+    let response404 = "HTTP/1.1 404 Not found\r\n\r\n";
 
     stream.read(&mut buffer).unwrap();
     let buffer = String::from_utf8(buffer.to_vec());
-    println!("Request came in, request: {:#?}", &buffer);
     let request = Request::read_request(&buffer.unwrap());
-    println!("Request came in, request: {:#?}", request);
-    // println!("Request came in, body: {:#?}", first_line);
+    // println!("Request came in, request: {:#?}", request);
+    let path = match request {
+        Ok(request) => request.start_line.path,
+        Err(err) => {
+            println!("{}", err);
+            return;
+        }
+    };
+
+    let response = if dir.contains_key(&path) {
+        println!("return content to path: {}", path);
+        format!("{}{}", response200, dir.get(&path).unwrap())
+    } else {
+        println!("Could not find path {} in {:#?}", path, dir);
+        response404.to_string()
+    };
 
     stream.write(response.as_bytes()).unwrap();
     stream.flush().unwrap();
