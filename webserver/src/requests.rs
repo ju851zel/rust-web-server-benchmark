@@ -22,6 +22,7 @@ impl Request {
         })
     }
     fn get_first_line(lines: &Vec<&str>) -> Result<StartLine, String> {
+        //todo Jörg do you know a better solution instead of the many matches?
         let error = "Could not parse request. Wrong Format".to_string();
         let first_line = match lines.get(0) {
             Some(line) => line,
