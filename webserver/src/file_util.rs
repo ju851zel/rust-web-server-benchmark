@@ -13,6 +13,15 @@ pub fn get_all_files_in_dir(path: &Path) -> Result<HashMap<String, String>, IoEr
 
     if !path.is_dir() { return error("Provided path is no directory"); }
 
+    //todo make something like that, but not working yet
+    // let res :Result<Vec<(String,String)>, IoError> = read_dir(path)?
+    //     .map(|entry| entry?.path())
+    //     .filter(|path| path.is_file())
+    //     .map(|path | {
+    //         (path.file_name()?.into_result()?.to_str().into_result()?,
+    //         read_to_string(path)?)
+    //     }).collect();
+
     for entry in read_dir(path)? {
         let file_path = entry?.path();
         if file_path.is_file() {
@@ -24,7 +33,6 @@ pub fn get_all_files_in_dir(path: &Path) -> Result<HashMap<String, String>, IoEr
             if filename.is_none() {
                 return error(format!("Filename of the file : {:?} no valid utf-8", file_path).as_str());
             };
-            ;
             println!("filename::: {:#?}", filename.unwrap());
             result.insert("/".to_string() + filename.unwrap(), read_to_string(file_path)?);
         } else {
