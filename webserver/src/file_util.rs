@@ -16,12 +16,17 @@ pub fn get_all_files_in_dir(path: &Path) -> Result<HashMap<String, String>, IoEr
     for entry in read_dir(path)? {
         let file_path = entry?.path();
         if file_path.is_file() {
-            let filename = file_path.to_str();
+            let filename = file_path.file_name();
             if filename.is_none() {
                 return error(format!("Filename of the file : {:?} no valid utf-8", file_path).as_str());
             };
-            let filename = filename.unwrap();
-            result.insert(filename.to_string(), read_to_string(file_path)?);
+            let filename = filename.unwrap().to_str();
+            if filename.is_none() {
+                return error(format!("Filename of the file : {:?} no valid utf-8", file_path).as_str());
+            };
+            ;
+            println!("filename::: {:#?}", filename.unwrap());
+            result.insert("/".to_string() + filename.unwrap(), read_to_string(file_path)?);
         } else {
             // todo add recursive visiting
         }
