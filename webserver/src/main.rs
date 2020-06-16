@@ -1,6 +1,7 @@
 use std::path::Path;
 use std::collections::hash_map::RandomState;
 use std::collections::HashMap;
+use std::sync::Arc;
 
 mod cli;
 mod file_util;
@@ -10,9 +11,9 @@ mod requests;
 fn main() {
     let (address, directory, thread_pool_size) = cli::start_cli();
 
-    let files = load_directory(directory);
+    let files: Arc<HashMap<String, String>> = Arc::new(load_directory(directory));
 
-    server::start_server(address.as_str(), thread_pool_size as usize);
+    server::start_server(address.as_str(), thread_pool_size as usize, files);
 }
 
 
