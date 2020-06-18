@@ -14,6 +14,8 @@ pub fn start_cli() -> (String, String, u32) {
     let port = cli.value_of("port").unwrap().parse::<u32>().unwrap();
     let dir = cli.value_of("dir").unwrap();
     let threads = cli.value_of("threads").unwrap().parse::<u32>().unwrap();
+    println!("Serving directory: {}", dir);
+    println!("Listening on {}:{} with {} threads", ip, port, threads);
 
     (format!("{}:{}", ip, port),
      format!("{}", dir),
