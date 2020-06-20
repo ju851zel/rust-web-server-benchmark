@@ -1,5 +1,8 @@
 [workspace]
 members = [
+    "cli",
+    "files",
     "webserver",
     "penetrator",
+    "hyperServer",
 ]
