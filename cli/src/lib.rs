@@ -2,7 +2,6 @@ extern crate clap;
 
 use clap::{Arg, App, ArgMatches};
 
-
 /// Starts the CLI and returns:
 /// - the address for the server to listen on
 /// - the directory the server should serve
@@ -59,7 +58,7 @@ fn create_matchers() -> ArgMatches<'static> {
             .short("d")
             .required(true)
             .long("directory")
-            .default_value("dist")
+            .default_value("_dist")
             .value_name("DIR")
             .help("The directory the server should serve")
             .takes_value(true))
