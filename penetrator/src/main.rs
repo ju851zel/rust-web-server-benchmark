@@ -4,5 +4,5 @@ use penetrator::penetrate;
 
 #[tokio::main]
 async fn main() {
-    penetrate(23, 8008).await;
+    penetrate(10, "http://httpbin.org/get".to_string()).await;
 }
