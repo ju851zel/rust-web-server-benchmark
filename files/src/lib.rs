@@ -42,37 +42,23 @@ pub fn get_all_files_in_dir(path: &Path) -> Result<HashMap<String, String>, IoEr
     Ok(result)
 }
 
+
+// todo finish loading of directory in memory and returning it
+pub fn load_directory(path: String) -> HashMap<String, String> {
+    match get_all_files_in_dir(Path::new(path.as_str())) {
+        Err(err) => {
+            println!("Error getting files in dir: {:?}", err);
+            panic!(); //todo
+        }
+        Ok(list) => {
+            println!("Successfully read dir in memory: {:#?}", list.keys());
+            return list;
+        }
+    }
+}
+
 /// Helper function to wrap a string as error, in order to use ? operator in other functions
 fn error(message: &str) -> Result<HashMap<String, String>, Error> {
     return Result::Err(IoError::new(ErrorKind::Other, message));
 }
 
-
-// GET /hello HTTP/1.1\r\n
-// Host: localhost:8080\r\n
-// Connection: keep-alive\r\n
-// Cache-Control: max-age=0\r\n
-// DNT: 1\r\n
-// Upgrade-Insecure-Requests: 1\r\n
-// User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.97 Safari/537.36\r\n
-// Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9\r\n
-// Sec-Fetch-Site: none\r\n
-// Sec-Fetch-Mode: navigate\r\n
-// Sec-Fetch-User: ?1\r\n
-// Sec-Fetch-Dest: document\r\n
-// Accept-Encoding: gz
-//
-//
-// GET / HTTP/1.1\r\n
-// Host: localhost:8080\r\n
-// Connection: keep-alive\r\n
-// DNT: 1\r\n
-// Upgrade-Insecure-Requests: 1\r\n
-// User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.97 Safari/537.36\r\n
-// Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9\r\n
-// Sec-Fetch-Site: none\r\n
-// Sec-Fetch-Mode: navigate\r\n
-// Sec-Fetch-User: ?1\r\n
-// Sec-Fetch-Dest: document\r\n
-// Accept-Encoding: gzip, deflate, br\r\n
-// Accept-Languag
