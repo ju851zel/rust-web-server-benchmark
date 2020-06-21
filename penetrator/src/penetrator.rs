@@ -32,7 +32,7 @@ fn generate_result(request_results: Vec<Result<(u16, u128), reqwest::Error>>, du
         .map(|r| r.as_ref().unwrap_or(&(0, 0)))
         .collect();
 
-    let num_of_success = success.len();
+    let num_of_success = if success.len() == 0 { 1 } else {success.len()};
     let num_of_errors = num_of_requests - num_of_success;
 
     let response_times: Vec<u128> = success.iter().map(|&&r| r.1).collect();

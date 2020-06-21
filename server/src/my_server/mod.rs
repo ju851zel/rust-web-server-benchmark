@@ -16,7 +16,7 @@ pub fn start_server(ip: String, port: i32, thread_pool_size: i32, dir: Arc<HashM
         Err(err) => panic!(err)
     };
 
-    let address = format!("{}:{}", ip,port);
+    let address = format!("{}:{}", ip, port);
 
     println!("My server listening for incoming requests on {}", address);
 
@@ -41,6 +41,7 @@ fn handle_connection(mut stream: TcpStream, dir: Arc<HashMap<String, String>>) {
     stream.read(&mut buffer).unwrap();
     let buffer = String::from_utf8(buffer.to_vec());
     let request = Request::read_request(&buffer.unwrap());
+
     println!("Request came in, request: {:#?}", request);
     let path = match request {
         Ok(request) => request.start_line.path,
@@ -50,12 +51,9 @@ fn handle_connection(mut stream: TcpStream, dir: Arc<HashMap<String, String>>) {
         }
     };
 
-    let response = if dir.contains_key(&path) {
-        println!("return content to path: {}", path);
-        format!("{}{}", response200, dir.get(&path).unwrap())
-    } else {
-        println!("Could not find path {} in {:#?}", path, dir);
-        response404.to_string()
+    let response = match dir.get(&path) {
+        Some(value) => format!("{}{}", response200, dir.get(&path).unwrap()),
+        None => response404.to_string(),
     };
 
     stream.write(response.as_bytes()).unwrap();

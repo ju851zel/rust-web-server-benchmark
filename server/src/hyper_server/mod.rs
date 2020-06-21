@@ -8,7 +8,7 @@ use std::collections::HashMap;
 #[tokio::main]
 pub async fn start_server(ip: String, port: i32, dir: Arc<HashMap<String, String>>) {
 
-    let address = format!("{}:{}", ip,port);
+    let address = format!("{}:{}", ip, port);
     let address: SocketAddr = address.parse().unwrap(); //correct ip format was handled before
 
     let make_svc = make_service_fn(|_conn| async {
@@ -26,7 +26,14 @@ pub async fn start_server(ip: String, port: i32, dir: Arc<HashMap<String, String
 }
 
 async fn hello_world(req: Request<Body>) -> Result<Response<Body>, Infallible> {
+    //todo make dir accessible here
+    let dir :Arc<HashMap<String, String>> = Arc::new(HashMap::new());
     let uri = req.uri();
 
-    Ok(Response::new("Hello, World".into()))
+    let result = match dir.get(uri.path()) {
+        Some(value) => (200, value.to_string()),
+        None => (404, "The requested ressource was not found".to_string()),
+    };
+    //todo return 404 Status Code on error
+    Ok(Response::new(result.1.into()))
 }
