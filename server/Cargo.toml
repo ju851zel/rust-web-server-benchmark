@@ -14,3 +14,5 @@ files = { path = "../files" }
 hyper = "0.13.6"
 tokio = { version = "0.2", features = ["full"] }
 futures = "0.3"
+#rouille
+rouille = "0.1.7"
