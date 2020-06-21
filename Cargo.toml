@@ -2,7 +2,6 @@
 members = [
     "cli",
     "files",
-    "webserver",
+    "server",
     "penetrator",
-    "hyperServer",
 ]

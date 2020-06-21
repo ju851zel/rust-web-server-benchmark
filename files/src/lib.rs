@@ -44,8 +44,8 @@ pub fn get_all_files_in_dir(path: &Path) -> Result<HashMap<String, String>, IoEr
 
 
 // todo finish loading of directory in memory and returning it
-pub fn load_directory(path: String) -> HashMap<String, String> {
-    match get_all_files_in_dir(Path::new(path.as_str())) {
+pub fn load_directory(path: &str) -> HashMap<String, String> {
+    match get_all_files_in_dir(Path::new(path)) {
         Err(err) => {
             println!("Error getting files in dir: {:?}", err);
             panic!(); //todo
