@@ -2,7 +2,7 @@ use std::sync::{mpsc::Sender, mpsc::channel, mpsc::Receiver, Arc, Mutex};
 use std::thread;
 
 
-
+#[derive(Debug)]
 pub struct ThreadPool {
     workers: Vec<Worker>,
     transmitter: Sender<Job>,
@@ -31,7 +31,7 @@ impl ThreadPool {
     }
 }
 
-
+#[derive(Debug)]
 struct Worker {
     id: usize,
     thread: thread::JoinHandle<()>,
@@ -40,17 +40,13 @@ struct Worker {
 
 impl Worker {
     fn new(id: usize, receiver: Arc<Mutex<Receiver<Job>>>) -> Self {
-        let thread = thread::spawn(move || {
-            loop {
+        Worker {
+            id,
+            thread: thread::spawn(move || loop {
                 let job = receiver.lock().unwrap().recv().unwrap();
                 println!("Worker {} starts executing a job", id);
                 job.call_box();
-            }
-        });
-
-        Worker {
-            id,
-            thread,
+            }),
         }
     }
 }
