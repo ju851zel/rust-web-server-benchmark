@@ -4,7 +4,6 @@ use std::net::{TcpListener, TcpStream};
 use server::ThreadPool;
 use crate::my_server::requests::Request;
 use std::io::{Read, Write};
-use std::borrow::{Borrow};
 
 mod server;
 mod requests;
@@ -26,6 +25,7 @@ pub fn start_server(ip: String, port: i32, thread_pool_size: i32, dir: Arc<HashM
         Err(err) => panic!(err)
     };
     for stream in listener.incoming() {
+        println!("{:#?}", stream);
         let connection = match stream {
             Ok(stream) => stream,
             Err(e) => {

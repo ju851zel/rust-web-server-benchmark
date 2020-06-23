@@ -1,7 +1,5 @@
 extern crate futures;
 
-use reqwest::header;
-use reqwest::Client;
 use futures::future::join_all;
 use std::time::Instant;
 use colored::Colorize;
