@@ -44,7 +44,7 @@ fn handle_connection(mut stream: TcpStream, dir: Arc<HashMap<String, String>>) {
 
     println!("Request came in, request: {:#?}", request);
     let path = match request {
-        Ok(request) => request.start_line.path,
+        Ok(request) => request.request_identifiers.path,
         Err(err) => {
             println!("{}", err);
             return;
