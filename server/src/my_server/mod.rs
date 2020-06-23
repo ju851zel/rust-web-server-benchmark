@@ -41,7 +41,7 @@ pub fn start_server(ip: String, port: i32, thread_pool_size: i32, dir: Arc<HashM
 }
 
 fn handle_connection(mut stream: TcpStream, dir: Arc<HashMap<String, Vec<u8>>>) {
-    let mut buffer = [0; 8000];
+    let mut buffer = [0; 2048];
     let mut response200 = "HTTP/1.1 200 OK\r\n\r\n".as_bytes().to_vec();
     let response404 = "HTTP/1.1 404 Not found\r\n\r\n".as_bytes().to_vec();
 

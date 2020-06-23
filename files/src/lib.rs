@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use std::fs::read_dir;
-use std::io::{Error as IoError, ErrorKind, Error};
+use std::io::{Error as IoError, ErrorKind};
 use std::path::Path;
 
 /// Get all files in a directory.
@@ -22,21 +22,17 @@ pub fn get_all_files_in_dir(path: &Path) -> Result<HashMap<String, Vec<u8>>, IoE
     //     }).collect();
 
     for entry in read_dir(path)? {
-        let file_path = entry?.path();
-        if file_path.is_file() {
-            let filename = file_path
+        let file = entry?.path();
+        if file.is_file() {
+            let filename = file
                 .file_name()
-                .ok_or("Filename no valid os string".to_string())
-                .map_err(|_error| std::io::Error::new(ErrorKind::Other, ""))?
+                .ok_or(std::io::Error::new(ErrorKind::Other, "Filename no valid os string"))?
                 .to_str()
-                .ok_or("Filename is no valid utf-8")
-                .map_err(|_error| std::io::Error::new(ErrorKind::Other, ""))?
+                .ok_or(IoError::new(ErrorKind::Other, "Filename is no valid utf-8"))?
                 .to_string();
 
-
             println!("filename::: {:#?}", filename);
-            let file_content = std::fs::read(file_path)?;
-
+            let file_content = std::fs::read(file)?;
             result.insert("/".to_string() + filename.as_str(), file_content);
         } else {
             // todo add recursive visiting
@@ -44,7 +40,6 @@ pub fn get_all_files_in_dir(path: &Path) -> Result<HashMap<String, Vec<u8>>, IoE
     }
     Ok(result)
 }
-
 
 // todo finish loading of directory in memory and returning it
 pub fn load_directory(path: &str) -> HashMap<String, Vec<u8>> {
@@ -61,7 +56,7 @@ pub fn load_directory(path: &str) -> HashMap<String, Vec<u8>> {
 }
 
 /// Helper function to wrap a string as error, in order to use ? operator in other functions
-fn error(message: &str) -> Result<HashMap<String, Vec<u8>>, Error> {
+fn error(message: &str) -> Result<HashMap<String, Vec<u8>>, IoError> {
     return Result::Err(IoError::new(ErrorKind::Other, message));
 }
 
