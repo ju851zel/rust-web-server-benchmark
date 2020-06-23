@@ -5,7 +5,6 @@ use core::fmt;
 
 type Result<T> = std::result::Result<T, Box<dyn error::Error>>;
 
-//todo change below to better implementation
 #[derive(Debug)]
 pub struct Request {
     pub request_identifiers: RequestIdentifiers,
