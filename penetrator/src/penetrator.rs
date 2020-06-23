@@ -26,9 +26,10 @@ pub async fn penetrate(num_of_requests: usize, url: String) {
 
 fn generate_result(request_results: Vec<Result<(u16, u128), reqwest::Error>>, duration: u128, url: String) {
     let num_of_requests = &request_results.len();
+    println!("{:#?}", request_results);
 
     let success: Vec<&(u16, u128)> = request_results.iter()
-        .filter(|&r| r.is_ok() && (200 <= r.as_ref().unwrap_or(&(0,0)).0) && 300 > r.as_ref().unwrap_or(&(0,0)).0)
+        .filter(|&r| r.is_ok() && (200 <= r.as_ref().unwrap_or(&(0, 0)).0) && 300 > r.as_ref().unwrap_or(&(0, 0)).0)
         .map(|r| r.as_ref().unwrap_or(&(0, 0)))
         .collect();
 
@@ -47,5 +48,7 @@ fn generate_result(request_results: Vec<Result<(u16, u128), reqwest::Error>>, du
     println!("Thus {}% of requests were successful.", (num_of_success / *num_of_requests * 100).to_string().yellow());
     println!("The slowest response time was {}ms.", max_response_time.to_string().red());
     println!("The fastest response time was {}ms.", min_response_time.to_string().green());
-    println!("The average response time was {}ms.", (sum_response_time / num_of_success as u128).to_string().yellow());
+    if num_of_success != 0 {
+        println!("The average response time was {}ms.", (sum_response_time / num_of_success as u128).to_string().yellow());
+    }
 }

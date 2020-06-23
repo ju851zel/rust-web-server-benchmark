@@ -2,12 +2,11 @@ extern crate clap;
 
 use clap::{Arg, App, ArgMatches};
 
-
 /// Starts the CLI and returns:
 /// - the address for the server to listen on
 /// - the directory the server should serve
 /// - the number of threads the thread pool should have
-pub fn start_cli() -> (String, String, u32) {
+pub fn start_cli() -> (String, i32, String, i32) {
     let cli = create_matchers();
 
     let ip = cli.value_of("ip").unwrap();
@@ -17,9 +16,10 @@ pub fn start_cli() -> (String, String, u32) {
     println!("Serving directory: {}", dir);
     println!("Listening on {}:{} with {} threads", ip, port, threads);
 
-    (format!("{}:{}", ip, port),
-     format!("{}", dir),
-     threads)
+    (ip.to_string(),
+     port as i32,
+     dir.to_string(),
+     threads as i32)
 }
 
 
@@ -27,12 +27,12 @@ fn create_matchers() -> ArgMatches<'static> {
     return App::new("Webserver")
         .version("0.1.0")
         .author("Jörg S, Julian Z")
-        .about("A simple but fast webserver in rust")
+        .about("A simple but fast server in rust")
         .arg(Arg::with_name("port")
             .short("p")
             .required(true)
             .long("port")
-            .default_value("8080")
+            .default_value("9000")
             .value_name("PORT")
             .validator(|value| valid_port(value))
             .help("The port the server will listen on")
@@ -50,7 +50,7 @@ fn create_matchers() -> ArgMatches<'static> {
             .short("ip")
             .required(true)
             .long("ip_address")
-            .default_value("localhost")
+            .default_value("127.0.0.1")
             .validator(|value| valid_ip(value))
             .value_name("IP")
             .help("The IPv4 the server will listen on")
@@ -59,7 +59,7 @@ fn create_matchers() -> ArgMatches<'static> {
             .short("d")
             .required(true)
             .long("directory")
-            .default_value("dist")
+            .default_value("_dist")
             .value_name("DIR")
             .help("The directory the server should serve")
             .takes_value(true))
@@ -89,7 +89,7 @@ fn valid_ip(ip: String) -> Result<(), String> {
         .filter(|num| num.parse::<u8>().is_ok())
         .count();
 
-    if blocks == 4 || ip == "localhost".to_string() {
+    if blocks == 4 {
         Ok(())
     } else { Err("Please provide a valid IPv4. e.g. 127.0.0.1".to_string()) }
 }
