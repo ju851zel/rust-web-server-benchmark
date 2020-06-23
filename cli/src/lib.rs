@@ -32,7 +32,7 @@ fn create_matchers() -> ArgMatches<'static> {
             .short("p")
             .required(true)
             .long("port")
-            .default_value("8080")
+            .default_value("9000")
             .value_name("PORT")
             .validator(|value| valid_port(value))
             .help("The port the server will listen on")
