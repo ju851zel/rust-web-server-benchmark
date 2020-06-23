@@ -6,7 +6,7 @@ use std::sync::Arc;
 use std::collections::HashMap;
 
 #[tokio::main]
-pub async fn start_server(ip: String, port: i32, dir: Arc<HashMap<String, String>>) {
+pub async fn start_server(ip: String, port: i32, _dir: Arc<HashMap<String, Vec<u8>>>) {
 
     let address = format!("{}:{}", ip, port);
     let address: SocketAddr = address.parse().unwrap(); //correct ip format was handled before

@@ -11,7 +11,7 @@ mod hyper_server;
 fn main() {
     let (ip, port, directory, thread_pool_size) = cli::start_cli();
 
-    let files: Arc<HashMap<String, String>> = Arc::new(files::load_directory(directory.as_str()));
+    let files: Arc<HashMap<String, Vec<u8>>> = Arc::new(files::load_directory(directory.as_str()));
 
 
     let my_files = files.clone();
