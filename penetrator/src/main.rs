@@ -1,10 +1,17 @@
 mod penetrator;
+mod cli;
 
 use penetrator::penetrate;
 
 #[tokio::main]
 async fn main() {
-    //todo not working
-    penetrate(10, "http://127.0.0.1:8081/small.html".to_string()).await;
+    let (url, number_of_requests) = cli::start_cli();
+
+    penetrate(number_of_requests, url).await;
+
+   penetrate(1, "http://www.httpvshttps.com/".to_string()).await;
+    penetrate(1, "http://www.httpbin.org/get".to_string()).await;
+    // penetrate(1, "http://123.123.123.23:9000/small.html".to_string()).await;
+    // penetrate(10, "https://www.google.de".to_string()).await;
 
 }
