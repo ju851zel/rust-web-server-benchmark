@@ -4,7 +4,7 @@ use std::net::{TcpListener, TcpStream};
 use server::ThreadPool;
 use crate::my_server::requests::Request;
 use std::io::{Read, Write};
-use std::borrow::{Borrow, BorrowMut};
+use std::borrow::{Borrow};
 
 mod server;
 mod requests;
