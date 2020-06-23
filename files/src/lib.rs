@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::fs::read_to_string;
 use std::fs::read_dir;
 use std::io::{Error as IoError, ErrorKind, Error};
 use std::path::Path;

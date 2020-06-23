@@ -1,7 +1,6 @@
 use rouille::{Response, ResponseBody};
 use std::collections::HashMap;
 use std::sync::Arc;
-use files;
 
 pub fn start_server(ip: String, port: i32, dir: Arc<HashMap<String, String>>) {
     let address = format!("{}:{}", ip, port);
