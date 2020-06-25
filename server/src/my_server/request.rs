@@ -22,8 +22,8 @@ pub struct RequestIdentifiers {
 #[derive(Debug)]
 #[derive(Eq, PartialEq)]
 pub enum RequestType {
-    GET,
-    POST,
+    Get,
+    Post,
     //todo add more cases
 }
 
@@ -57,12 +57,14 @@ impl Request {
             .split_whitespace().collect();
 
         let req_type = match first_line_content.get(0).ok_or(InvalidRequest)? {
-            &"GET" => RequestType::GET,
-            &"POST" => RequestType::POST,
-            _ => RequestType::GET
+            &"GET" => RequestType::Get,
+            &"POST" => RequestType::Post,
+            _ => RequestType::Get
         };
 
         let req_path = first_line_content.get(1).ok_or(InvalidRequest)?;
+        let req_path = req_path.split("?").collect::<Vec<&str>>();
+        let req_path = req_path.get(0).ok_or(InvalidRequest)?;
         let req_version = first_line_content.get(2).ok_or(InvalidRequest)?;
 
         Ok(RequestIdentifiers {
@@ -76,7 +78,7 @@ impl Request {
         Ok(lines.into_iter()
             .skip(1)
             .map(|line| -> Vec<&str> { line.splitn(2, ": ").collect() })
-            .filter(|header_pair|  header_pair.len() == 2)
+            .filter(|header_pair| header_pair.len() == 2)
             .map(|header_pair|
                 ((header_pair.get(0).unwrap().to_string()), header_pair.get(1).unwrap().to_string())
             )
@@ -107,7 +109,7 @@ mod tests {
             "Sec-Fetch-Dest: document\r\n",
         ];
 
-        let mut result= HashMap::new();
+        let mut result = HashMap::new();
         result.insert("Host", "localhost:8080\r\n");
         result.insert("Connection", "keep-alive\r\n");
         result.insert("Cache-Control", "max-age=0\r\n");
@@ -135,7 +137,7 @@ mod tests {
             "Connection keep-alive\r\n",
         ];
 
-        let mut result= HashMap::new();
+        let mut result = HashMap::new();
         result.insert("Host", "localhost:8080\r\n");
 
         let result: HashMap<String, String> =
@@ -153,7 +155,7 @@ mod tests {
             "UselessHeader: Colon:Test\r\n"
         ];
 
-        let mut result= HashMap::new();
+        let mut result = HashMap::new();
         result.insert("Host", "localhost:8080\r\n");
         result.insert("UselessHeader", "Colon:Test\r\n");
 
@@ -170,7 +172,7 @@ mod tests {
             "GET /hello HTTP/1.1\r\n"
         ];
 
-        let mut result= HashMap::new();
+        let mut result = HashMap::new();
 
         assert_eq!(Request::get_headers(&request).unwrap(), result)
     }
@@ -181,8 +183,8 @@ mod tests {
             "GET /hello HTTP/1.1\r\n"
         ];
 
-        let mut result= RequestIdentifiers {
-            method: RequestType::GET,
+        let mut result = RequestIdentifiers {
+            method: RequestType::Get,
             path: "/hello".to_string(),
             version: "HTTP/1.1".to_string(),
         };
