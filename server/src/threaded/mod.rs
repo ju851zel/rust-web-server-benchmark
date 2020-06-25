@@ -2,14 +2,11 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::net::{TcpListener, TcpStream};
 use server::ThreadPool;
-use crate::my_server::request::{Request};
 use std::io::{Read, Write};
-use crate::my_server::response::Response;
+use crate::response::Response;
+use crate::request::Request;
 
 mod server;
-mod request;
-mod response;
-
 /// Starts the server listening on the address,
 /// with the amount of threads provided by thread_pool_size.
 pub fn start_server(ip: String, port: i32, thread_pool_size: i32, dir: Arc<HashMap<String, Vec<u8>>>) {
