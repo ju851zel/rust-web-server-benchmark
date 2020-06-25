@@ -28,11 +28,13 @@ pub enum RequestType {
 }
 
 #[derive(Debug)]
-struct InvalidRequest;
+struct InvalidRequest {
+    message: String
+}
 
 impl fmt::Display for InvalidRequest {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Could not parse request. Wrong Format.")
+        write!(f, "Could not parse request.{}", self.message)
     }
 }
 
@@ -53,19 +55,24 @@ impl Request {
 
     fn get_request_identifiers(lines: &Vec<&str>) -> Result<RequestIdentifiers> {
         let first_line_content: Vec<&str> = lines
-            .get(0).ok_or(InvalidRequest)?
+            .get(0).ok_or(InvalidRequest{message: "First line does not confirm HTTP protocol.".to_string()})?
             .split_whitespace().collect();
 
-        let req_type = match first_line_content.get(0).ok_or(InvalidRequest)? {
+        let req_type = match first_line_content
+            .get(0)
+            .ok_or(InvalidRequest{message: "HTTP Type not specified".to_string()})? {
             &"GET" => RequestType::Get,
             &"POST" => RequestType::Post,
             _ => RequestType::Get
         };
 
-        let req_path = first_line_content.get(1).ok_or(InvalidRequest)?;
+        let req_path = first_line_content.get(1)
+            .ok_or(InvalidRequest{message: "path not provided".to_string()})?;
         let req_path = req_path.split("?").collect::<Vec<&str>>();
-        let req_path = req_path.get(0).ok_or(InvalidRequest)?;
-        let req_version = first_line_content.get(2).ok_or(InvalidRequest)?;
+        let req_path = req_path.get(0)
+            .ok_or(InvalidRequest{message: "path not provided".to_string()})?;
+        let req_version = first_line_content.get(2)
+            .ok_or(InvalidRequest{message: "http version not specified.".to_string()})?;
 
         Ok(RequestIdentifiers {
             method: req_type,
