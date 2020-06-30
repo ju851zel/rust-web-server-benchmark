@@ -53,8 +53,8 @@ fn read_directory(path: &Path) -> Result<HashMap<String, Vec<u8>>, IoError> {
 
 
 // todo finish loading of directory in memory and returning it
-pub fn load_directory(path: &str) -> HashMap<String, Vec<u8>> {
-    match get_all_files_in_dir(Path::new(path)) {
+pub fn load_directory(path: &Path) -> HashMap<String, Vec<u8>> {
+    match get_all_files_in_dir(path) {
         Err(err) => {
             println!("Error getting files in dir: {:?}", err);
             panic!(); //todo

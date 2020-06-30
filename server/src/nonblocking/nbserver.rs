@@ -22,6 +22,12 @@ pub(crate) fn main() {
     incoming_q.add(listener_event);
 
     loop {
+        if incoming_q.events.len() > 0 {
+            let (listener, stream) = incoming_q.wait().unwrap();
+            let event = Event::new_read(stream, [0; 1024]);
+            reading_q.add(event).unwrap();
+            incoming_q.add(listener);
+        }
         if reading_q.events.len() > 0 {
             let (event, result) = reading_q.wait_for_read_data().unwrap();
             let event = Event::new_write(event.stream, from_slice(&result[..]));
@@ -31,12 +37,6 @@ pub(crate) fn main() {
             let x = writing_q.wait_for_write_data().unwrap();
         }
 
-        if incoming_q.events.len() > 0 {
-            let (listener, stream) = incoming_q.wait().unwrap();
-            let event = Event::new_read(stream, [0; 1024]);
-            reading_q.add(event).unwrap();
-            incoming_q.add(listener);
-        }
     }
 
 
