@@ -1,17 +1,20 @@
-use crate::event_loop::ffi;
+use crate::event_loop::{ffi, Files};
 use std::net::{TcpListener, TcpStream};
 use std::os::unix::io::AsRawFd;
 use core::ptr;
 use crate::event_loop::ffi::{Queue, Event, kevent, KeventInternal, ListenerEvent, ListenerQueue};
 
 
-pub(crate) fn main() {
+pub fn start_server(ip:String, port: i32, dir: Files) {
+
+    let address = format!("{}:{}", ip, port);
+
     let mut incoming_q = ListenerQueue::new().unwrap();
     let mut reading_q = Queue::new().unwrap();
     let mut writing_q = Queue::new().unwrap();
 
 
-    let listener = match TcpListener::bind(format!("127.0.0.1:{}", 9005)) {
+    let listener = match TcpListener::bind(address) {
         Ok(listener) => listener,
         Err(err) => panic!(err)
     };

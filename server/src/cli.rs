@@ -67,7 +67,7 @@ fn create_matchers() -> ArgMatches<'static> {
             .short("y")
             .required(true)
             .long("server_type")
-            .default_value("threaded")
+            .default_value("all")
             .validator(|value| valid_type(value))
             .value_name("TYPE")
             .help("The type of the server [threaded|event_loop|rouille|all]")

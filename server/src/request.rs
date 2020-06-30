@@ -1,6 +1,8 @@
 use std::collections::HashMap;
 use std::error;
 use core::fmt;
+use crate::Directory;
+use crate::response::Response;
 
 type Result<T> = std::result::Result<T, Box<dyn error::Error>>;
 
@@ -41,6 +43,38 @@ impl fmt::Display for InvalidRequest {
 impl error::Error for InvalidRequest {}
 
 impl Request {
+    pub fn create_response(buffer: [u8; 2048], dir: Directory) -> Response {
+        let mut response = Response::default_ok();
+
+        let request = match String::from_utf8(buffer.to_vec()) {
+            Ok(string) => string,
+            Err(_) => {
+                println!("Request could not be interpreted as string.");
+                return Response::default_bad_request()
+            }
+        };
+
+        let key = match Request::read_request(&request) {
+            Ok(request) => request.request_identifiers.path,
+            Err(err) => {
+                println!("Request could not be interpreted as string.");
+                return Response::default_bad_request()
+            }
+        };
+
+        match dir.get(&key) {
+            Some(resource) => {
+                response.add_content_type(key);
+                response.body = resource.clone();
+                response
+            }
+            None => {
+                println!("Requested resource {} could not be found.", key);
+                Response::default_not_found()
+            }
+        }
+    }
+
     pub fn read_request(buffer: &str) -> Result<Request> {
         let lines: Vec<&str> = buffer.split("\r\n").collect();
         let request_identifiers = Request::get_request_identifiers(&lines)?;

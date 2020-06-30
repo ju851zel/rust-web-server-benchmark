@@ -5,6 +5,7 @@ use server::ThreadPool;
 use std::io::{Read, Write};
 use crate::response::Response;
 use crate::request::Request;
+use crate::Directory;
 
 mod server;
 
@@ -38,45 +39,15 @@ pub fn start_server(ip: String, port: i32, thread_pool_size: i32, dir: Arc<HashM
     }
 }
 
-fn handle_connection(mut stream: TcpStream, dir: Arc<HashMap<String, Vec<u8>>>) {
+fn handle_connection(mut stream: TcpStream, dir: Directory) {
     let mut buffer = [0; 2048];
-    let mut response = Response::default_ok();
 
     if let Err(err) = stream.read(&mut buffer) {
         println!("Threaded: Error while processing request. Ignoring request");
         return;
     }
-
-    let request = match String::from_utf8(buffer.to_vec()) {
-        Ok(string) => string,
-        Err(_) => {
-            println!("Threaded: Request could not be interpreted as string.");
-            send_response(stream, Response::default_bad_request());
-            return;
-        }
-    };
-
-    let key = match Request::read_request(&request) {
-        Ok(request) => request.request_identifiers.path,
-        Err(err) => {
-            println!("Threaded: Request could not be interpreted as string.");
-            send_response(stream, Response::default_bad_request());
-            return;
-        }
-    };
-
-    match dir.get(&key) {
-        Some(resource) => {
-            response.add_content_type(key);
-            response.body = resource.clone();
-            send_response(stream, response);
-        }
-        None => {
-            println!("Threaded: Requested resource {} could not be found.", key);
-            send_response(stream, Response::default_not_found());
-            return;
-        }
-    }
+    let response = Request::create_response(buffer, dir);
+    send_response(stream, response);
 }
 
 fn send_response(mut stream: TcpStream, mut response: Response) {

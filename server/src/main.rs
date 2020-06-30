@@ -52,9 +52,9 @@ fn main() {
             let dir_e = dir.clone();
             thread::spawn(move || event_loop::start_server(ip_e, port_e, dir_e));
 
-            println!("Starting all servers\
-                      Threaded server is listening on {ip}:{port_t}\
-                      Event loop server is listening on {ip}:{port_e}\",
+            println!("Starting all servers\n\
+                      Threaded server is listening on {ip}:{port_t}\n\
+                      Event loop server is listening on {ip}:{port_e}\n\
                       Rouille server is listening on {ip}:{port}",
                      ip = ip.to_string().cyan(),
                      port_t = (port_t).to_string().cyan(),
