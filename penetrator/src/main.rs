@@ -16,3 +16,8 @@ async fn main() {
     //working
     penetrate(10, "https://www.google.de".to_string()).await;
 }
+
+
+// https://cfsamsonbooks.gitbook.io/epoll-kqueue-iocp-explained/the-recipie-for-an-eventqueue/epoll
+// https://docs.rs/mio/0.5.1/mio/struct.EventLoop.html
+// crossbeam

@@ -13,10 +13,16 @@ use std::any::Any;
 type Files = Arc<HashMap<String, Vec<u8>>>;
 type Buffer = [u8; 2048];
 
+mod ffi;
+mod nbserver;
+
 pub fn start_server(ip: String, port: i32, dir: Files) {
     let address = format!("{}:{}", ip, port);
 
-    println!("Async await server listening for incoming requests on {}", address);
+    println!("Nonblocking server listening for incoming requests on {}", address);
+
+    nbserver::main();
+    return;
 
     let mut reading_conns: Vec<(TcpStream, Buffer)> = vec![];
     let mut writing_conns: Vec<(TcpStream, Vec<u8>)> = vec![];
