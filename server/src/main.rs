@@ -5,51 +5,46 @@ use std::path::Path;
 
 mod threaded;
 mod rouille;
-mod nonblocking;
+mod event_loop;
 mod request;
 mod response;
 mod file;
 mod cli;
 
 use colored::Colorize;
+use std::thread::JoinHandle;
 
+type Directory = Arc<HashMap<String, Vec<u8>>>;
 
 fn main() {
-    println!("{}", "Starting the webserver!".to_string().cyan());
+    println!("Starting the webserver!");
 
-    let (ip, port, directory, threads, type_) = cli::start_cli();
+    let (ip, port, dir, threads, type_) = cli::start_cli();
 
-    println!("Server listening on {}:{} with {} threads", ip, port, threads);
-    println!("Serving directory: {}", directory);
+    println!("Server is a {} server", type_.cyan());
+    println!("Server listening on {}:{}", ip.to_string().cyan(), port.to_string().cyan());
+    println!("Serving directory: {}", dir.cyan());
 
+    let dir = load_provided_directory(Path::new(&dir));
 
-    let files = load_provided_directory(Path::new(directory.as_str()));
+    match &type_[..] {
+        "threaded" => threaded::start_server(ip, port, threads, dir),
+        "event_loop" => event_loop::start_server(ip, port, dir),
+        "rouille" => rouille::start_server(ip, port, dir),
+        _ => {
+            let ip_t = ip.clone();
+            let dir_t = dir.clone();
+            thread::spawn(move || threaded::start_server(ip_t, port, threads, dir_t));
 
+            let ip_e = ip.clone();
+            let dir_e = dir.clone();
+            thread::spawn(move || event_loop::start_server(ip_e, port, dir_e));
 
-    let my_files = files.clone();
-    let rouille_files = files.clone();
-    let non_blocking_files = files.clone();
-    let my_ip = ip.clone();
-    let rouille_ip = ip.clone();
-    let non_blocking_ip = ip.clone();
-
-    let my = thread::spawn(move || {
-        threaded::start_server(my_ip, port, threads, my_files);
-    });
-
-    let rouille = thread::spawn(move || {
-        rouille::start_server(rouille_ip, port + 2, rouille_files);
-    });
-
-    let non_blocking = thread::spawn(move || {
-        nonblocking::start_server(non_blocking_ip, port + 1, non_blocking_files);
-    });
-
-    my.join().unwrap();
-    non_blocking.join().unwrap();
-    rouille.join().unwrap();
+            rouille::start_server(ip, port, dir);
+        }
+    };
 }
 
-fn load_provided_directory(directory: &Path) -> Arc<HashMap<String, Vec<u8>>> {
-    Arc::new(file::load_directory(directory))
+fn load_provided_directory(dir: &Path) -> Directory {
+    Arc::new(file::load_directory(dir))
 }

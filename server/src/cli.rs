@@ -70,7 +70,7 @@ fn create_matchers() -> ArgMatches<'static> {
             .default_value("threaded")
             .validator(|value| valid_type(value))
             .value_name("TYPE")
-            .help("The type of the server [threaded|event_loop|rouille]")
+            .help("The type of the server [threaded|event_loop|rouille|all]")
             .takes_value(true))
         .get_matches();
 }
@@ -83,8 +83,8 @@ fn valid_port(string: String) -> Result<(), String> {
     }
 }
 
-fn valid_type(string: String) -> Result<(), String> {
-    if string == "threaded" || string == "event_loop" || string == "rouille" {
+fn valid_type(s: String) -> Result<(), String> {
+    if s == "threaded" || s == "event_loop" || s == "rouille" || s == "all" {
         Ok(())
     } else {
         Err("Please select a server type [threaded|event_loop|rouille]".to_string())

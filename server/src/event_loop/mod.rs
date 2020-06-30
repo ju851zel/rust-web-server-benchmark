@@ -1,13 +1,10 @@
 use std::sync::Arc;
 use std::collections::HashMap;
-use std::net::{TcpListener, TcpStream, SocketAddr};
+use std::net::{TcpListener, TcpStream};
 use std::io::{Read, Write};
 use crate::response::Response;
 use crate::request::Request;
-use futures::io::{Error, ErrorKind};
-use std::thread::sleep;
-use std::time::Duration;
-use std::any::Any;
+use futures::io::{ErrorKind};
 
 
 type Files = Arc<HashMap<String, Vec<u8>>>;
@@ -16,7 +13,7 @@ type Buffer = [u8; 2048];
 mod ffi;
 mod nbserver;
 
-pub fn start_server(ip: String, port: i32, dir: Files) {
+pub fn start_server(ip:String, port: i32, dir: Files) {
     let address = format!("{}:{}", ip, port);
 
     println!("Nonblocking server listening for incoming requests on {}", address);
@@ -107,7 +104,7 @@ fn handle_writing_conns(conns: &mut Vec<(TcpStream, Vec<u8>)>) -> Option<(TcpStr
         }
     };
 
-    Some(if bytes_wrote == buffer.len(){
+    Some(if bytes_wrote == buffer.len() {
         buffer = Vec::new();
         println!("Did not write all {} bytes", bytes_wrote);
         (stream, buffer, true)

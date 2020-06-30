@@ -1,8 +1,8 @@
-use crate::nonblocking::ffi;
+use crate::event_loop::ffi;
 use std::net::{TcpListener, TcpStream};
 use std::os::unix::io::AsRawFd;
 use core::ptr;
-use crate::nonblocking::ffi::{Queue, Event, kevent, KeventInternal, ListenerEvent, ListenerQueue};
+use crate::event_loop::ffi::{Queue, Event, kevent, KeventInternal, ListenerEvent, ListenerQueue};
 
 
 pub(crate) fn main() {
