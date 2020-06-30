@@ -21,15 +21,16 @@ pub(crate) fn main() {
     incoming_q.add(listener_event);
 
     loop {
-        if incoming_q.events.len() > 0 {
-            let stream = incoming_q.wait().unwrap();
-            let event = Event::new(stream, [0; 1024]);
-            reading_q.add(event).unwrap();
-        }
-
         if reading_q.events.len() > 0 {
             reading_q.wait();
         }
+        if incoming_q.events.len() > 0 {
+            let (listener, stream) = incoming_q.wait().unwrap();
+            let event = Event::new(stream, [0; 1024]);
+            reading_q.add(event).unwrap();
+            incoming_q.add(listener);
+        }
+
     }
 
 

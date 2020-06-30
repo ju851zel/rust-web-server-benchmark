@@ -148,6 +148,7 @@ impl Queue {
         return Ok(());
     }
 }
+
 impl ListenerQueue {
     pub fn new() -> Result<Self, String> {
         let fd = unsafe { kqueue() };
@@ -174,7 +175,7 @@ impl ListenerQueue {
         }
         return Ok(());
     }
-    pub fn wait(&mut self) -> Result<TcpStream, String> {
+    pub fn wait(&mut self) -> Result<(ListenerEvent, TcpStream), String> {
         let mut finished_events = Vec::with_capacity(16);//todo change to proper size/
         loop {
             let res = unsafe {
@@ -206,10 +207,11 @@ impl ListenerQueue {
             let removed = self.events.remove(index.unwrap());
             let mut event = ListenerEvent {
                 data: [0; 1024],
-                stream: removed.stream,
+                listener: removed.listener,
                 kevent: removed.kevent,
             };
-            return Ok(event.stream.accept().unwrap().0)
+            let tcp_stream = event.listener.accept().unwrap().0;
+            return Ok((event, tcp_stream));
         }
 
         // println!("Event came in: {:#?}", events.first());
@@ -230,7 +232,7 @@ pub struct Event {
 pub struct ListenerEvent {
     //todo change to request or sth like that
     pub data: [u8; 1024],
-    pub stream: TcpListener,
+    pub listener: TcpListener,
     // the internal C representation of the Event
     pub kevent: [KeventInternal; 1],
 }
@@ -265,7 +267,7 @@ impl ListenerEvent {
                 data: 0,
                 udata: 0,
             }],
-            stream,
+            listener: stream,
         }
     }
 }
