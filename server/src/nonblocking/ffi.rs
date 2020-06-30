@@ -1,5 +1,5 @@
 use std::ptr;
-use std::net::TcpStream;
+use std::net::{TcpStream, TcpListener};
 use std::os::unix::io::AsRawFd;
 use std::borrow::Borrow;
 use std::io::Read;
@@ -42,6 +42,13 @@ extern "C" {
 pub struct Queue {
     // unique identifier for this event
     pub events: Vec<Event>,
+    pub wait_timeout: Timespec,
+    pub(crate) fd: i32,
+}
+
+pub struct ListenerQueue {
+    // unique identifier for this event
+    pub events: Vec<ListenerEvent>,
     pub wait_timeout: Timespec,
     pub(crate) fd: i32,
 }
@@ -141,6 +148,74 @@ impl Queue {
         return Ok(());
     }
 }
+impl ListenerQueue {
+    pub fn new() -> Result<Self, String> {
+        let fd = unsafe { kqueue() };
+        if fd < 0 {
+            return Err(String::from("Error creating new event queue"));
+        }
+        Ok(Self { events: vec![], wait_timeout: Timespec::zero(), fd })
+    }
+
+    pub fn add(&mut self, event: ListenerEvent) -> Result<(), String> {
+        self.events.push(event);
+        let worked = unsafe {
+            kevent(
+                self.fd,
+                self.events.last().unwrap().kevent.as_ptr(),
+                1,
+                ptr::null_mut(),
+                0,
+                &self.wait_timeout,
+            )
+        };
+        if worked < 0 {
+            return Err(String::from("Could not insert event into q"));
+        }
+        return Ok(());
+    }
+    pub fn wait(&mut self) -> Result<TcpStream, String> {
+        let mut finished_events = Vec::with_capacity(16);//todo change to proper size/
+        loop {
+            let res = unsafe {
+                kevent(
+                    self.fd,
+                    ptr::null(),
+                    0,
+                    finished_events.as_mut_ptr(),
+                    finished_events.capacity() as i32,
+                    ptr::null(),
+                )
+            };
+            // This result will return the number of events which occurred
+            // (if any) or a negative number if it's an error.
+            if res < 0 {
+                return Err(String::from("Could not wait for event"));
+            };
+            if res > 0 {
+                unsafe { finished_events.set_len(res as usize) };
+                println!("res: {:#?}, finished_events: {:#?}", res, finished_events);
+                break;
+            }
+        }
+
+        let index = self.events.iter()
+            .position(|ev| ev.kevent[0].ident == finished_events[0].ident);
+
+        if index.is_some() {
+            let removed = self.events.remove(index.unwrap());
+            let mut event = ListenerEvent {
+                data: [0; 1024],
+                stream: removed.stream,
+                kevent: removed.kevent,
+            };
+            return Ok(event.stream.accept().unwrap().0)
+        }
+
+        // println!("Event came in: {:#?}", events.first());
+        return Err("Error accepting".to_string());
+    }
+}
 
 //identified by ident,filter and udata
 // #[derive(Debug)]
@@ -152,10 +227,35 @@ pub struct Event {
     pub kevent: [KeventInternal; 1],
 }
 
+pub struct ListenerEvent {
+    //todo change to request or sth like that
+    pub data: [u8; 1024],
+    pub stream: TcpListener,
+    // the internal C representation of the Event
+    pub kevent: [KeventInternal; 1],
+}
+
 
 impl Event {
-    pub(crate) fn new(stream: TcpStream, data: [u8; 1024]) -> Event {
-        Event {
+    pub(crate) fn new(stream: TcpStream, data: [u8; 1024]) -> Self {
+        Self {
+            data,
+            kevent: [KeventInternal {
+                ident: stream.as_raw_fd() as u64,
+                filter: EVFILT_READ,
+                flags: EV_ADD | EV_ENABLE | EV_ONESHOT,
+                fflags: 0,
+                data: 0,
+                udata: 0,
+            }],
+            stream,
+        }
+    }
+}
+
+impl ListenerEvent {
+    pub(crate) fn new(stream: TcpListener, data: [u8; 1024]) -> Self {
+        Self {
             data,
             kevent: [KeventInternal {
                 ident: stream.as_raw_fd() as u64,

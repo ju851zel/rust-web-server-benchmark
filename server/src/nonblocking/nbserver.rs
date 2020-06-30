@@ -2,12 +2,12 @@ use crate::nonblocking::ffi;
 use std::net::{TcpListener, TcpStream};
 use std::os::unix::io::AsRawFd;
 use core::ptr;
-use crate::nonblocking::ffi::{Queue, Event, kevent, KeventInternal};
-use futures::future::err;
+use crate::nonblocking::ffi::{Queue, Event, kevent, KeventInternal, ListenerEvent, ListenerQueue};
 
 
 pub(crate) fn main() {
-    let mut incoming_queue = Queue::new().unwrap();
+    let mut incoming_q = ListenerQueue::new().unwrap();
+    let mut reading_q = Queue::new().unwrap();
 
 
     let listener = match TcpListener::bind(format!("127.0.0.1:{}", 9005)) {
@@ -15,16 +15,24 @@ pub(crate) fn main() {
         Err(err) => panic!(err)
     };
 
+    listener.set_nonblocking(true).unwrap();
+
+    let listener_event = ListenerEvent::new(listener, [0; 1024]);
+    incoming_q.add(listener_event);
+
     loop {
-        let stream = listener.accept().unwrap().0;
-        stream.set_nonblocking(true).unwrap();
+        if incoming_q.events.len() > 0 {
+            let stream = incoming_q.wait().unwrap();
+            let event = Event::new(stream, [0; 1024]);
+            reading_q.add(event).unwrap();
+        }
 
-        let event = Event::new(stream, [0; 1024]);
-        incoming_queue.add(event).unwrap();
-
-        if incoming_queue.events.len() > 0 {
-            incoming_queue.wait();
+        if reading_q.events.len() > 0 {
+            reading_q.wait();
         }
     }
+
+
+    // stream.set_nonblocking(true).unwrap();
 }
 
