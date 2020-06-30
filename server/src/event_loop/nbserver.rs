@@ -21,13 +21,13 @@ pub fn start_server(ip:String, port: i32, dir: Files) {
 
     listener.set_nonblocking(true).unwrap();
 
-    let listener_event = ListenerEvent::new(listener, [0; 1024]);
+    let listener_event = ListenerEvent::new(listener, [0; 2048]);
     incoming_q.add(listener_event);
 
     loop {
         if incoming_q.events.len() > 0 {
             let (listener, stream) = incoming_q.wait().unwrap();
-            let event = Event::new_read(stream, [0; 1024]);
+            let event = Event::new_read(stream, [0; 2048]);
             reading_q.add(event).unwrap();
             incoming_q.add(listener);
         }
@@ -41,16 +41,13 @@ pub fn start_server(ip:String, port: i32, dir: Files) {
         }
 
     }
-
-
-    // stream.set_nonblocking(true).unwrap();
 }
 
-fn from_slice(bytes: &[u8]) -> [u8; 1024] {
+fn from_slice(bytes: &[u8]) -> [u8; 2048] {
     let vec: Vec<u8> = bytes.to_vec();
-    let mut result = [0; 1024];
-    if bytes.len() > 1024 { println!("todo to small buffer"); }
-    for i in 0..1024 {
+    let mut result = [0; 2048];
+    if bytes.len() > 2048 { println!("todo to small buffer"); }
+    for i in 0..2048 {
         result[i] = match vec.get(i) {
             Some(val) => *val,
             None => 0,

@@ -1,54 +1,48 @@
 use std::ptr;
 use std::net::{TcpStream, TcpListener};
 use std::os::unix::io::AsRawFd;
-use std::borrow::Borrow;
 use std::io::{Read, Write};
 use futures::io::ErrorKind;
 use crate::response::Response;
 use crate::request::Request;
 
-///from https://gist.github.com/ytomino/03f2f687483674feff1446e64c3fdac9:~:text=EVFILT_READ
+/// from https://gist.github.com/ytomino/03f2f687483674feff1446e64c3fdac9:~:text=EVFILT_READ
 /// use man kevent on mac
-//
-pub const EVFILT_WRITE: i16 = -2;
-pub const EVFILT_READ: i16 = -1;
-//adds the event readding will modify and not re add event,
+// adds the event readding will modify and not re add event,
 // automatically enabled it when not calling EV_DISABLE
-pub const EV_ADD: u16 = 1;
 // must be added to not return the event when it
 // automatically gets activated when adding to q
+
+pub const EVFILT_WRITE: i16 = -2;
+pub const EVFILT_READ: i16 = -1;
+pub const EV_ADD: u16 = 1;
 pub const EV_ENABLE: u16 = 4;
 pub const EV_ONESHOT: u16 = 16;
 
 #[link(name = "c")]
 extern "C" {
-    // returns a file descriptor to a new kernel event q / -1 if error
-    // notify user when kernel event (kevent) happens
-    pub fn kqueue() -> i32; //file descriptor
+    // call of the C function, returning the fd
+    pub fn kqueue() -> i32;
 
-    //return the number of events placed in eventlist up to number of nevents
     pub fn kevent(
-        kq: i32, //the file descriptor
-        changelist: *const KeventInternal, //pointer to array of Kevent
+        kq: i32, // the file descriptor of the q
+        changelist: *const KeventInternal, // pointer to array of KeventInternal, put in the ones that should be added
         nchanges: i32, // size of the changelist array
-        eventlist: *const KeventInternal, // pointer to array of out Kevent structs
-        nevents: i32, // size of eventlist
-        timeout: *const Timespec,//todo will always be null pointer
+        eventlist: *const KeventInternal, // pointer to array of the finished KeventInternal
+        nevents: i32, // size of eventlist array
+        timeout: *const Timespec,
     ) -> i32;
 
     pub fn close(d: i32) -> i32;
 }
 
-// #[derive(Debug)]
 pub struct Queue {
-    // unique identifier for this event
     pub events: Vec<Event>,
     pub wait_timeout: Timespec,
     pub(crate) fd: i32,
 }
 
 pub struct ListenerQueue {
-    // unique identifier for this event
     pub events: Vec<ListenerEvent>,
     pub wait_timeout: Timespec,
     pub(crate) fd: i32,
@@ -81,7 +75,7 @@ impl Queue {
         return Ok(());
     }
     pub fn wait_for_read_data(&mut self) -> Result<(Event, Vec<u8>), String> {
-        let mut finished_events = Vec::with_capacity(16);//todo change to proper size/
+        let mut finished_events = Vec::with_capacity(16);// todo change to proper size/
         loop {
             let res = unsafe {
                 kevent(
@@ -111,7 +105,7 @@ impl Queue {
         if index.is_some() {
             let removed = self.events.remove(index.unwrap());
             let mut event = Event {
-                data: [0; 1024],
+                data: [0; 2048],
                 stream: removed.stream,
                 kevent: removed.kevent,
             };
@@ -196,11 +190,11 @@ impl Queue {
                 }
             };
 
-            if bytes_written == event.data.len(){
-                return Ok(())
+            if bytes_written == event.data.len() {
+                return Ok(());
             } else {
                 println!("Not all written: buf: {}, written: {}", event.data.len(), bytes_written);
-                return Ok(())
+                return Ok(());
             }
         }
 
@@ -265,7 +259,7 @@ impl ListenerQueue {
         if index.is_some() {
             let removed = self.events.remove(index.unwrap());
             let mut event = ListenerEvent {
-                data: [0; 1024],
+                data: [0; 2048],
                 listener: removed.listener,
                 kevent: removed.kevent,
             };
@@ -282,7 +276,7 @@ impl ListenerQueue {
 // #[derive(Debug)]
 pub struct Event {
     //todo change to request or sth like that
-    pub data: [u8; 1024],
+    pub data: [u8; 2048],
     pub stream: TcpStream,
     // the internal C representation of the Event
     pub kevent: [KeventInternal; 1],
@@ -290,7 +284,7 @@ pub struct Event {
 
 pub struct ListenerEvent {
     //todo change to request or sth like that
-    pub data: [u8; 1024],
+    pub data: [u8; 2048],
     pub listener: TcpListener,
     // the internal C representation of the Event
     pub kevent: [KeventInternal; 1],
@@ -298,7 +292,7 @@ pub struct ListenerEvent {
 
 
 impl Event {
-    pub(crate) fn new_read(stream: TcpStream, data: [u8; 1024]) -> Self {
+    pub(crate) fn new_read(stream: TcpStream, data: [u8; 2048]) -> Self {
         Self {
             data,
             kevent: [KeventInternal {
@@ -312,7 +306,7 @@ impl Event {
             stream,
         }
     }
-    pub(crate) fn new_write(stream: TcpStream, data: [u8; 1024]) -> Self {
+    pub(crate) fn new_write(stream: TcpStream, data: [u8; 2048]) -> Self {
         Self {
             data,
             kevent: [KeventInternal {
@@ -329,7 +323,7 @@ impl Event {
 }
 
 impl ListenerEvent {
-    pub(crate) fn new(stream: TcpListener, data: [u8; 1024]) -> Self {
+    pub(crate) fn new(stream: TcpListener, data: [u8; 2048]) -> Self {
         Self {
             data,
             kevent: [KeventInternal {
