@@ -21,24 +21,45 @@ fn main() {
 
     let (ip, port, dir, threads, type_) = cli::start_cli();
 
-    println!("Server is a {} server", type_.cyan());
-    println!("Server listening on {}:{}", ip.to_string().cyan(), port.to_string().cyan());
     println!("Serving directory: {}", dir.cyan());
 
     let dir = load_provided_directory(Path::new(&dir));
 
     match &type_[..] {
-        "threaded" => threaded::start_server(ip, port, threads, dir),
-        "event_loop" => event_loop::start_server(ip, port, dir),
-        "rouille" => rouille::start_server(ip, port, dir),
+        "threaded" => {
+            println!("Server is a {} server\n Server is listening on {}:{}",
+                     type_.cyan(), ip.to_string().cyan(), port.to_string().cyan());
+            threaded::start_server(ip, port, threads, dir)
+        }
+        "event_loop" => {
+            println!("Server is a {} server\n Server is listening on {}:{}",
+                     type_.cyan(), ip.to_string().cyan(), port.to_string().cyan());
+            event_loop::start_server(ip, port, dir)
+        }
+        "rouille" => {
+            println!("Server is a {} server\n Server is listening on {}:{}",
+                     type_.cyan(), ip.to_string().cyan(), port.to_string().cyan());
+            rouille::start_server(ip, port, dir)
+        }
         _ => {
             let ip_t = ip.clone();
+            let port_t = port + 1;
             let dir_t = dir.clone();
-            thread::spawn(move || threaded::start_server(ip_t, port, threads, dir_t));
+            thread::spawn(move || threaded::start_server(ip_t, port_t, threads, dir_t));
 
             let ip_e = ip.clone();
+            let port_e = port + 2;
             let dir_e = dir.clone();
-            thread::spawn(move || event_loop::start_server(ip_e, port, dir_e));
+            thread::spawn(move || event_loop::start_server(ip_e, port_e, dir_e));
+
+            println!("Starting all servers\
+                      Threaded server is listening on {ip}:{port_t}\
+                      Event loop server is listening on {ip}:{port_e}\",
+                      Rouille server is listening on {ip}:{port}",
+                     ip = ip.to_string().cyan(),
+                     port_t = (port_t).to_string().cyan(),
+                     port_e = (port_e).to_string().cyan(),
+                     port = (port).to_string().cyan());
 
             rouille::start_server(ip, port, dir);
         }
@@ -48,3 +69,4 @@ fn main() {
 fn load_provided_directory(dir: &Path) -> Directory {
     Arc::new(file::load_directory(dir))
 }
+
