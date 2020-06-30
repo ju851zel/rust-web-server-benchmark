@@ -2,7 +2,7 @@ use std::ptr;
 use std::net::{TcpStream, TcpListener};
 use std::os::unix::io::AsRawFd;
 use std::borrow::Borrow;
-use std::io::Read;
+use std::io::{Read, Write};
 use futures::io::ErrorKind;
 use crate::response::Response;
 use crate::request::Request;
@@ -10,6 +10,7 @@ use crate::request::Request;
 ///from https://gist.github.com/ytomino/03f2f687483674feff1446e64c3fdac9:~:text=EVFILT_READ
 /// use man kevent on mac
 //
+pub const EVFILT_WRITE: i16 = -2;
 pub const EVFILT_READ: i16 = -1;
 //adds the event readding will modify and not re add event,
 // automatically enabled it when not calling EV_DISABLE
@@ -79,7 +80,7 @@ impl Queue {
         }
         return Ok(());
     }
-    pub fn wait(&mut self) -> Result<(), String> {
+    pub fn wait_for_read_data(&mut self) -> Result<(Event, Vec<u8>), String> {
         let mut finished_events = Vec::with_capacity(16);//todo change to proper size/
         loop {
             let res = unsafe {
@@ -142,10 +143,68 @@ impl Queue {
             } else {
                 println!("Request: {:#?}", request.unwrap());
             };
+            response.body = "<h1>test</h1>".to_string().into_bytes();
+            return Ok((event, response.make_sendable()));
         }
 
         // println!("Event came in: {:#?}", events.first());
-        return Ok(());
+        return Err("Error in .....".to_string());
+    }
+
+    pub fn wait_for_write_data(&mut self) -> Result<(), String> {
+        let mut finished_events = Vec::with_capacity(16);//todo change to proper size/
+        loop {
+            let res = unsafe {
+                kevent(
+                    self.fd,
+                    ptr::null(),
+                    0,
+                    finished_events.as_mut_ptr(),
+                    finished_events.capacity() as i32,
+                    ptr::null(),
+                )
+            };
+            // This result will return the number of events which occurred
+            // (if any) or a negative number if it's an error.
+            if res < 0 {
+                return Err(String::from("Could not wait for event"));
+            };
+            if res > 0 {
+                unsafe { finished_events.set_len(res as usize) };
+                println!("res: {:#?}, finished_events: {:#?}", res, finished_events);
+                break;
+            }
+        }
+
+        let index = self.events.iter()
+            .position(|ev| ev.kevent[0].ident == finished_events[0].ident);
+
+        if index.is_some() {
+            let mut event = self.events.remove(index.unwrap());
+            let bytes_written = match event.stream.write(&mut event.data) {
+                Err(error) if error.kind() == ErrorKind::WouldBlock => {
+                    println!("Would block");
+                    0
+                }
+                Err(error) => {
+                    println!("{}", error);
+                    0
+                }
+                Ok(bytes_read) => {
+                    println!("I read {} bytes", bytes_read);
+                    bytes_read
+                }
+            };
+
+            if bytes_written == event.data.len(){
+                return Ok(())
+            } else {
+                println!("Not all written: buf: {}, written: {}", event.data.len(), bytes_written);
+                return Ok(())
+            }
+        }
+
+        return Err("Error in .....".to_string());
     }
 }
 
@@ -239,12 +298,26 @@ pub struct ListenerEvent {
 
 
 impl Event {
-    pub(crate) fn new(stream: TcpStream, data: [u8; 1024]) -> Self {
+    pub(crate) fn new_read(stream: TcpStream, data: [u8; 1024]) -> Self {
         Self {
             data,
             kevent: [KeventInternal {
                 ident: stream.as_raw_fd() as u64,
                 filter: EVFILT_READ,
+                flags: EV_ADD | EV_ENABLE | EV_ONESHOT,
+                fflags: 0,
+                data: 0,
+                udata: 0,
+            }],
+            stream,
+        }
+    }
+    pub(crate) fn new_write(stream: TcpStream, data: [u8; 1024]) -> Self {
+        Self {
+            data,
+            kevent: [KeventInternal {
+                ident: stream.as_raw_fd() as u64,
+                filter: EVFILT_WRITE,
                 flags: EV_ADD | EV_ENABLE | EV_ONESHOT,
                 fflags: 0,
                 data: 0,
