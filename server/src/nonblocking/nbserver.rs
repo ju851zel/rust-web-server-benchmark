@@ -7,7 +7,7 @@ use futures::future::err;
 
 
 pub(crate) fn main() {
-    let mut q = Queue::new().unwrap();
+    let mut incoming_queue = Queue::new().unwrap();
 
 
     let listener = match TcpListener::bind(format!("127.0.0.1:{}", 9005)) {
@@ -17,15 +17,14 @@ pub(crate) fn main() {
 
     loop {
         let stream = listener.accept().unwrap().0;
-
-        println!("sock came in ");
-
         stream.set_nonblocking(true).unwrap();
 
-        let event = Event::new(stream, [0;1024]);
-        q.add(event).unwrap();
-        q.wait();
+        let event = Event::new(stream, [0; 1024]);
+        incoming_queue.add(event).unwrap();
 
+        if incoming_queue.events.len() > 0 {
+            incoming_queue.wait();
+        }
     }
 }
 

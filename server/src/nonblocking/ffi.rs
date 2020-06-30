@@ -32,7 +32,7 @@ extern "C" {
         nchanges: i32, // size of the changelist array
         eventlist: *const KeventInternal, // pointer to array of out Kevent structs
         nevents: i32, // size of eventlist
-        timeout: *const KeventInternal,//todo will always be null pointer
+        timeout: *const Timespec,//todo will always be null pointer
     ) -> i32;
 
     pub fn close(d: i32) -> i32;
@@ -41,8 +41,8 @@ extern "C" {
 // #[derive(Debug)]
 pub struct Queue {
     // unique identifier for this event
-    pub finished: Vec<Event>,
-    pub reading: Vec<Event>,
+    pub events: Vec<Event>,
+    pub wait_timeout: Timespec,
     pub(crate) fd: i32,
 }
 
@@ -52,19 +52,19 @@ impl Queue {
         if fd < 0 {
             return Err(String::from("Error creating new event queue"));
         }
-        Ok(Queue { finished: vec![], reading: vec![], fd })
+        Ok(Queue { events: vec![], wait_timeout: Timespec::zero(), fd })
     }
 
     pub fn add(&mut self, event: Event) -> Result<(), String> {
-        self.reading.push(event);
+        self.events.push(event);
         let worked = unsafe {
             kevent(
                 self.fd,
-                self.reading.last().unwrap().kevent.as_ptr(),
+                self.events.last().unwrap().kevent.as_ptr(),
                 1,
                 ptr::null_mut(),
                 0,
-                ptr::null(),
+                &self.wait_timeout,
             )
         };
         if worked < 0 {
@@ -97,11 +97,11 @@ impl Queue {
             }
         }
 
-        let index = self.reading.iter()
+        let index = self.events.iter()
             .position(|ev| ev.kevent[0].ident == finished_events[0].ident);
 
         if index.is_some() {
-            let removed = self.reading.remove(index.unwrap());
+            let removed = self.events.remove(index.unwrap());
             let mut event = Event {
                 data: [0; 1024],
                 stream: removed.stream,
@@ -195,3 +195,27 @@ type uint16_t = u16;
 type uint32_t = u32;
 type intptr_t = i64;
 type void_ptr = u64;
+
+
+#[derive(Debug)]
+#[repr(C)]
+pub struct Timespec {
+    tv_sec: isize,
+    v_nsec: usize,
+}
+
+
+impl Timespec {
+    pub fn of(msec: i32) -> Self {
+        Timespec {
+            tv_sec: (msec / 1000) as isize,
+            v_nsec: ((msec % 1000) * 1000000) as usize,
+        }
+    }
+    pub fn zero() -> Self {
+        Timespec {
+            tv_sec: 0 as isize,
+            v_nsec: 0 as usize,
+        }
+    }
+}
