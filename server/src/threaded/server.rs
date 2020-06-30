@@ -9,8 +9,7 @@ pub struct ThreadPool {
 }
 
 impl ThreadPool {
-    pub fn new(size: usize) -> Result<ThreadPool, String> {
-        if size < 2 { return Err("A thread pool size of 2 or more is required.".to_string()); }
+    pub fn new(size: usize) -> ThreadPool {
 
         let (tx, rx) = channel();
 
@@ -21,7 +20,7 @@ impl ThreadPool {
         for id in 0..size {
             workers.push(Worker::new(id, Arc::clone(&receiver)));
         }
-        Ok(ThreadPool { workers, transmitter: tx })
+        ThreadPool { workers, transmitter: tx }
     }
 
     pub fn execute<F>(&self, function: F)
@@ -44,7 +43,6 @@ impl Worker {
             id,
             thread: thread::spawn(move || loop {
                 let job = receiver.lock().unwrap().recv().unwrap();
-                println!("Worker {} starts executing a job", id);
                 job.call_box();
             }),
         }

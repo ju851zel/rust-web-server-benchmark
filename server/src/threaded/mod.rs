@@ -11,13 +11,7 @@ mod server;
 /// Starts the server listening on the address,
 /// with the amount of threads provided by thread_pool_size.
 pub fn start_server(ip: String, port: i32, thread_pool_size: i32, dir: Arc<HashMap<String, Vec<u8>>>) {
-    let pool = match ThreadPool::new(thread_pool_size as usize) {
-        Ok(pool) => pool,
-        Err(err) => {
-            println!("Threaded: Thread pool creation error. Consider a restart of the programm");
-            return;
-        }
-    };
+    let pool = ThreadPool::new(thread_pool_size as usize);
 
     let address = format!("{}:{}", ip, port);
 
@@ -48,18 +42,21 @@ fn handle_connection(mut stream: TcpStream, dir: Arc<HashMap<String, Vec<u8>>>) 
     let mut buffer = [0; 2048];
     let mut response = Response::default_ok();
 
-    if let Err(err) = stream.read(&mut buffer).is_err() {
+    if let Err(err) = stream.read(&mut buffer) {
         println!("Threaded: Error while processing request. Ignoring request");
         return;
     }
 
-    if let Err(err) = String::from_utf8(buffer.to_vec()) {
-        println!("Threaded: Request could not be interpreted as string.");
-        send_response(stream, Response::default_bad_request());
-        return;
-    }
+    let request = match String::from_utf8(buffer.to_vec()) {
+        Ok(string) => string,
+        Err(_) => {
+            println!("Threaded: Request could not be interpreted as string.");
+            send_response(stream, Response::default_bad_request());
+            return;
+        }
+    };
 
-    let key = match Request::read_request(&buffer.unwrap()) {
+    let key = match Request::read_request(&request) {
         Ok(request) => request.request_identifiers.path,
         Err(err) => {
             println!("Threaded: Request could not be interpreted as string.");
@@ -75,7 +72,7 @@ fn handle_connection(mut stream: TcpStream, dir: Arc<HashMap<String, Vec<u8>>>) 
             send_response(stream, response);
         }
         None => {
-            println!("Threaded: Requested resource could not be found.");
+            println!("Threaded: Requested resource {} could not be found.", key);
             send_response(stream, Response::default_not_found());
             return;
         }
