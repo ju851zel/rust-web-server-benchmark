@@ -2,6 +2,10 @@ use std::ptr;
 use std::net::TcpStream;
 use std::os::unix::io::AsRawFd;
 use std::borrow::Borrow;
+use std::io::Read;
+use futures::io::ErrorKind;
+use crate::response::Response;
+use crate::request::Request;
 
 ///from https://gist.github.com/ytomino/03f2f687483674feff1446e64c3fdac9:~:text=EVFILT_READ
 /// use man kevent on mac
@@ -34,11 +38,11 @@ extern "C" {
     pub fn close(d: i32) -> i32;
 }
 
-#[derive(Debug)]
+// #[derive(Debug)]
 pub struct Queue {
     // unique identifier for this event
+    pub finished: Vec<Event>,
     pub reading: Vec<Event>,
-    pub incoming: Vec<Event>,
     pub(crate) fd: i32,
 }
 
@@ -48,15 +52,15 @@ impl Queue {
         if fd < 0 {
             return Err(String::from("Error creating new event queue"));
         }
-        Ok(Queue { reading: vec![], incoming: vec![], fd })
+        Ok(Queue { finished: vec![], reading: vec![], fd })
     }
 
     pub fn add(&mut self, event: Event) -> Result<(), String> {
-        self.incoming.push(event);
+        self.reading.push(event);
         let worked = unsafe {
             kevent(
                 self.fd,
-                self.incoming.last().unwrap().kevent.as_ptr(),
+                self.reading.last().unwrap().kevent.as_ptr(),
                 1,
                 ptr::null_mut(),
                 0,
@@ -93,18 +97,44 @@ impl Queue {
             }
         }
 
-        println!("{:#?}", finished_events);
-        let index = self.incoming.iter()
+        let index = self.reading.iter()
             .position(|ev| ev.kevent[0].ident == finished_events[0].ident);
 
         if index.is_some() {
-            let removed = self.incoming.remove(index.unwrap());
-            let event = Event {
-                data: [u8;1024],
+            let removed = self.reading.remove(index.unwrap());
+            let mut event = Event {
+                data: [0; 1024],
                 stream: removed.stream,
                 kevent: removed.kevent,
             };
-            self.reading.push(event);
+            let bytes_read = match event.stream.read(&mut event.data) {
+                Err(error) if error.kind() == ErrorKind::WouldBlock => {
+                    println!("Would block");
+                    0
+                }
+                Err(error) => {
+                    println!("{}", error);
+                    0
+                }
+                Ok(bytes_read) => {
+                    println!("I read {} bytes", bytes_read);
+                    bytes_read
+                }
+            };
+
+            let mut response = Response::default_ok();
+
+            let utf8_buffer = String::from_utf8(event.data.to_vec());
+            if utf8_buffer.is_err() {
+                println!("Request could not be interpreted as utf-8");
+            };
+
+            let request = Request::read_request(&utf8_buffer.unwrap());
+            if request.is_err() {
+                println!("Request is invalid");
+            } else {
+                println!("Request: {:#?}", request.unwrap());
+            };
         }
 
         // println!("Event came in: {:#?}", events.first());
@@ -113,10 +143,10 @@ impl Queue {
 }
 
 //identified by ident,filter and udata
-#[derive(Debug)]
+// #[derive(Debug)]
 pub struct Event {
     //todo change to request or sth like that
-    pub data: [u8;1024],
+    pub data: [u8; 1024],
     pub stream: TcpStream,
     // the internal C representation of the Event
     pub kevent: [KeventInternal; 1],
@@ -124,7 +154,7 @@ pub struct Event {
 
 
 impl Event {
-    pub(crate) fn new(stream: TcpStream, data: [u8;1024]) -> Event {
+    pub(crate) fn new(stream: TcpStream, data: [u8; 1024]) -> Event {
         Event {
             data,
             kevent: [KeventInternal {

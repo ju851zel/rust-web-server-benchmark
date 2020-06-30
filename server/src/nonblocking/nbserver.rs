@@ -22,7 +22,7 @@ pub(crate) fn main() {
 
         stream.set_nonblocking(true).unwrap();
 
-        let event = Event::new(stream, [u8;1024]);
+        let event = Event::new(stream, [0;1024]);
         q.add(event).unwrap();
         q.wait();
 
