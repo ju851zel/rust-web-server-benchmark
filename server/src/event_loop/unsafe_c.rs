@@ -18,9 +18,9 @@ const EV_ONESHOT: u16 = 16;
 #[link(name = "c")]
 extern "C" {
     // call of the C function, returning the fd
-     fn kqueue() -> i32;
+    fn kqueue() -> i32;
 
-     fn kevent(
+    fn kevent(
         kq: i32, // the file descriptor of the q
         changelist: *const KeventInternal, // pointer to array of KeventInternal, put in the ones that should be added
         nchanges: i32, // size of the changelist array
@@ -29,7 +29,7 @@ extern "C" {
         timeout: *const Timespec,
     ) -> i32;
 
-     fn close(d: i32) -> i32;
+    fn close(d: i32) -> i32;
 }
 
 pub fn create_kqueue() -> Result<i32, String> {
@@ -39,10 +39,11 @@ pub fn create_kqueue() -> Result<i32, String> {
     }
     return Ok(file_desc);
 }
-//todo check listener i32 correct
-fn create_k_event(filter: i16,listener_fd: i32) -> KeventInternal {
+
+
+fn create_k_event(filter: i16, listener_fd: u64) -> KeventInternal {
     KeventInternal {
-        ident: listener_fd as u64,
+        ident: listener_fd,
         filter,
         flags: EV_ADD | EV_ENABLE | EV_ONESHOT,
         fflags: 0,
@@ -51,19 +52,20 @@ fn create_k_event(filter: i16,listener_fd: i32) -> KeventInternal {
     }
 }
 
-pub fn create_k_read_event(fd:i32) -> KeventInternal {
+pub fn create_k_read_event(fd: u64) -> KeventInternal {
     create_k_event(EVFILT_READ, fd)
 }
-pub fn create_k_write_event(fd:i32) -> KeventInternal {
+
+pub fn create_k_write_event(fd: u64) -> KeventInternal {
     create_k_event(EVFILT_WRITE, fd)
 }
 
 
-pub fn put_kevent_in_kqueue(fd: i32, event: & KeventInternal, time_spec: *const Timespec) -> Result<(), String> {
+pub fn put_kevent_in_kqueue(fd: i32, event: &KeventInternal, time_spec: & Timespec) -> Result<(), String> {
     let worked = unsafe {
         kevent(
             fd,
-            event,//self.events.last().unwrap().kevent.as_ptr(),
+            event,
             1,
             ptr::null_mut(),
             0,
@@ -76,8 +78,8 @@ pub fn put_kevent_in_kqueue(fd: i32, event: & KeventInternal, time_spec: *const 
     Ok(())
 }
 
-pub fn poll_kevents_from_q(fd: i32) -> Result<Vec<KeventInternal>, String> {
-    let mut finished_events: Vec<KeventInternal> = Vec::with_capacity(16);// todo change to proper size/
+pub fn poll_kevents_from_q(fd: i32, timeout: &Timespec) -> Result<Vec<KeventInternal>, String> {
+    let mut finished_events: Vec<KeventInternal> = Vec::with_capacity(256);// todo change to proper size/
     let res = unsafe {
         kevent(
             fd,
@@ -85,7 +87,7 @@ pub fn poll_kevents_from_q(fd: i32) -> Result<Vec<KeventInternal>, String> {
             0,
             finished_events.as_mut_ptr(),
             finished_events.capacity() as i32,
-            ptr::null(),
+            timeout,
         )
     };
     if res < 0 {

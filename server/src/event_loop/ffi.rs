@@ -12,9 +12,8 @@ pub struct Queue<T> where T: GeneralEvent {
     pub events: Vec<T>,
     pub wait_timeout: Timespec,
     pub dir: Directory,
-    pub(crate) fd: i32,
+    pub fd : i32 ,
 }
-
 
 impl<T> Queue<T> where T: GeneralEvent {
     pub fn new(dir: Directory) -> Result<Queue<T>, String> {
@@ -34,7 +33,7 @@ impl<T> Queue<T> where T: GeneralEvent {
 
     pub fn poll(&mut self) -> Result<Vec<T>, String> {
         let finished_events = loop {
-            let results = poll_kevents_from_q(self.fd)?;
+            let results = poll_kevents_from_q(self.fd, &self.wait_timeout)?;
             if results.len() > 0 {
                 break results;
             }
@@ -87,14 +86,14 @@ impl Event {
     pub(crate) fn new_read(stream: TcpStream, data: [u8; 2048]) -> Self {
         Self {
             data,
-            kevent: create_k_read_event(stream.as_raw_fd()),
+            kevent: create_k_read_event(stream.as_raw_fd() as u64),
             stream,
         }
     }
     pub(crate) fn new_write(stream: TcpStream, data: [u8; 2048]) -> Self {
         Self {
             data,
-            kevent: create_k_write_event(stream.as_raw_fd()),
+            kevent: create_k_write_event(stream.as_raw_fd() as u64),
             stream,
         }
     }
@@ -124,7 +123,7 @@ impl ListenerEvent {
     pub(crate) fn new(listener: TcpListener, data: [u8; 2048]) -> Self {
         Self {
             data,
-            kevent: create_k_read_event(listener.as_raw_fd()),
+            kevent: create_k_read_event(listener.as_raw_fd() as u64),
             listener,
         }
     }
