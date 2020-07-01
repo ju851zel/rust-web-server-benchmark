@@ -27,9 +27,9 @@ impl<T> Queue<T> where T: GeneralEvent {
     }
 
     pub fn add(&mut self, event: T) -> Result<(), String> {
-        let kevent = event.get_kevent();
         self.events.push(event);
-        put_kevent_in_kqueue(self.fd, kevent, &self.wait_timeout)
+        let kevent = self.events.last().unwrap().get_kevent();
+        put_kevent_in_kqueue(self.fd, &kevent, &self.wait_timeout)
     }
 
     pub fn poll(&mut self) -> Result<Vec<T>, String> {
@@ -66,7 +66,7 @@ pub struct Event {
     pub data: [u8; 2048],
     pub stream: TcpStream,
     // the internal C representation of the Event
-    pub kevent: [KeventInternal; 1],
+    pub kevent: KeventInternal,
 }
 
 pub struct ListenerEvent {
@@ -74,27 +74,27 @@ pub struct ListenerEvent {
     pub data: [u8; 2048],
     pub listener: TcpListener,
     // the internal C representation of the Event
-    pub kevent: [KeventInternal; 1],
+    pub kevent: KeventInternal,
 }
 
 
-trait GeneralEvent {
+pub trait GeneralEvent {
     fn get_ident(&self) -> u64;
-    fn get_kevent(&self) -> *const KeventInternal;
+    fn get_kevent(&self) -> &KeventInternal;
 }
 
 impl Event {
     pub(crate) fn new_read(stream: TcpStream, data: [u8; 2048]) -> Self {
         Self {
             data,
-            kevent: [create_k_read_event(stream.as_raw_fd())],
+            kevent: create_k_read_event(stream.as_raw_fd()),
             stream,
         }
     }
     pub(crate) fn new_write(stream: TcpStream, data: [u8; 2048]) -> Self {
         Self {
             data,
-            kevent: [create_k_write_event(stream.as_raw_fd())],
+            kevent: create_k_write_event(stream.as_raw_fd()),
             stream,
         }
     }
@@ -102,21 +102,21 @@ impl Event {
 
 impl GeneralEvent for Event {
     fn get_ident(&self) -> u64 {
-        self.kevent[0].ident
+        self.kevent.ident
     }
 
-    fn get_kevent(&self) -> *const KeventInternal {
-        self.kevent.as_ptr()
+    fn get_kevent(&self) -> &KeventInternal {
+        &self.kevent
     }
 }
 
 impl GeneralEvent for ListenerEvent {
     fn get_ident(&self) -> u64 {
-        self.kevent[0].ident
+        self.kevent.ident
     }
 
-    fn get_kevent(&self) -> *const KeventInternal {
-        self.kevent.as_ptr()
+    fn get_kevent(&self) -> &KeventInternal {
+        &self.kevent
     }
 }
 
@@ -124,7 +124,7 @@ impl ListenerEvent {
     pub(crate) fn new(listener: TcpListener, data: [u8; 2048]) -> Self {
         Self {
             data,
-            kevent: [create_k_read_event(listener.as_raw_fd())],
+            kevent: create_k_read_event(listener.as_raw_fd()),
             listener,
         }
     }

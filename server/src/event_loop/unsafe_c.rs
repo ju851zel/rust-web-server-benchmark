@@ -59,7 +59,7 @@ pub fn create_k_write_event(fd:i32) -> KeventInternal {
 }
 
 
-pub fn put_kevent_in_kqueue(fd: i32, event: *const KeventInternal, time_spec: *const Timespec) -> Result<(), String> {
+pub fn put_kevent_in_kqueue(fd: i32, event: & KeventInternal, time_spec: *const Timespec) -> Result<(), String> {
     let worked = unsafe {
         kevent(
             fd,

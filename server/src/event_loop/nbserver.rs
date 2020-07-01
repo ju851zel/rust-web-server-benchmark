@@ -23,6 +23,7 @@ pub fn start_server(ip: String, port: i32, dir: Files) {
 
     let listener_event = ListenerEvent::new(listener, [0; 2048]);
     incoming_q.add(listener_event);
+    println!("Test that the code is run");
 
     loop {
         if incoming_q.events.len() > 0 {
