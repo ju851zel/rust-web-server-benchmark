@@ -1,20 +1,24 @@
 # rust-web-server-benchmark
 The projekt in "Programmieren in Rust".
 
-The idea is to build a webserver in rust. This means we want a binray crate that serves a specified directory as a server. The focus of the server should be performance.
+The idea is to build different webservers in rust. This means we want a binray crate that serves a specified directory as a server. The server handles request either with a threadpool, a eventloop or with a crate called rouille(which creates a thread per request).
 
 ## Specifications
-- lightning fast webserver
-- serving of static html from a directory
-- benchmarking about performance
-  - we want to create a second binary that bombs the server with parralel requests
-  - we could implement parts of the server with different crates, to see the differences in performance
+- webserver 
+  - threadpool
+  - event loop
+  - per request one thread
+- serving of static files from a directory, regardless of filetype
+- benchmarking
+  - penetrator thet bombards the specific webserver with requests, monitoring how it went
+  - each server has an endpoint /stats that gives an overview about the following:
+    - How many request were send in the last minute/hour/day
+    - How many were successfull/not successfull
+    - How fast was the fastest, slowest and average
+    - Which resource was requested and how often
 
-- when starting the server via the commandline make it possible to specify the following aspects
+- when starting the server via the commandline it should be possible to specify the following aspects
   - the directory to serve
   - the interface to listen on
   - the port to listen on
-  - tbc
-
-## Crates
-- we should not use rocket.rs, but there is a library which makes handling tcp connections easier, we could use this one
+  - which server to start, e.g. threaded
