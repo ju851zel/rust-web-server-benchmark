@@ -1,17 +1,17 @@
 use crate::event_loop::{ffi, Files};
-use std::net::{TcpListener, TcpStream};
-use std::os::unix::io::AsRawFd;
+use std::net::{TcpListener};
 use core::ptr;
-use crate::event_loop::ffi::{Queue, Event, kevent, KeventInternal, ListenerEvent, ListenerQueue};
+use crate::event_loop::ffi::{Queue, Event, ListenerEvent};
+use std::io::{Read, ErrorKind, Write};
+use crate::request::Request;
 
 
-pub fn start_server(ip:String, port: i32, dir: Files) {
-
+pub fn start_server(ip: String, port: i32, dir: Files) {
     let address = format!("{}:{}", ip, port);
 
-    let mut incoming_q = ListenerQueue::new().unwrap();
-    let mut reading_q = Queue::new().unwrap();
-    let mut writing_q = Queue::new().unwrap();
+    let mut incoming_q = Queue::new(dir.clone()).unwrap();
+    let mut reading_q = Queue::new(dir.clone()).unwrap();
+    let mut writing_q = Queue::new(dir).unwrap();
 
 
     let listener = match TcpListener::bind(address) {
@@ -26,20 +26,58 @@ pub fn start_server(ip:String, port: i32, dir: Files) {
 
     loop {
         if incoming_q.events.len() > 0 {
-            let (listener, stream) = incoming_q.wait().unwrap();
-            let event = Event::new_read(stream, [0; 2048]);
-            reading_q.add(event).unwrap();
-            incoming_q.add(listener);
+            let ready_listening_events = incoming_q.poll().unwrap();
+            for listen_event in ready_listening_events {
+                let stream = listen_event.listener.accept().unwrap().0;
+                let read_event = Event::new_read(stream, [0; 2048]);
+                reading_q.add(read_event).unwrap();
+                incoming_q.add(listen_event);
+            }
         }
         if reading_q.events.len() > 0 {
-            let (event, result) = reading_q.wait_for_read_data().unwrap();
-            let event = Event::new_write(event.stream, from_slice(&result[..]));
-            writing_q.add(event).unwrap();
+            let ready_reading_events = reading_q.poll().unwrap();
+            for mut reading_event in ready_reading_events {
+                let x =match reading_event.stream.read(&mut reading_event.data) {
+                    Err(error) if error.kind() == ErrorKind::WouldBlock => {
+                        println!("Would block");
+                        0
+                    }
+                    Err(error) => {
+                        println!("{}", error);
+                        0
+                    }
+                    Ok(bytes_read) => {
+                        println!("I read {} bytes", bytes_read);
+                        bytes_read
+                    }
+                };
+                let mut response = Request::create_response(reading_event.data, reading_q.dir.clone()).make_sendable();
+                let event = Event::new_write(reading_event.stream, from_slice(&response[..]));
+                writing_q.add(event).unwrap();
+            }
         }
         if writing_q.events.len() > 0 {
-            let x = writing_q.wait_for_write_data().unwrap();
+            let ready_writing_events = writing_q.poll().unwrap();
+            for mut event in ready_writing_events {
+                let bytes_written = match event.stream.write(&mut event.data) {
+                    Err(error) if error.kind() == ErrorKind::WouldBlock => {
+                        println!("Would block");
+                        0
+                    }
+                    Err(error) => {
+                        println!("{}", error);
+                        0
+                    }
+                    Ok(bytes_read) => {
+                        println!("I read {} bytes", bytes_read);
+                        bytes_read
+                    }
+                };
+                if bytes_written != event.data.len() {
+                    println!("Not all written: buf: {}, written: {}", event.data.len(), bytes_written);
+                }
+            }
         }
-
     }
 }
 

@@ -11,6 +11,7 @@ type Buffer = [u8; 2048];
 
 mod ffi;
 mod nbserver;
+mod unsafe_c;
 
 
 pub fn start_server(ip: String, port: i32, dir: Files) {

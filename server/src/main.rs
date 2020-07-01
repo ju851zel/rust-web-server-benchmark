@@ -12,7 +12,6 @@ mod file;
 mod cli;
 
 use colored::Colorize;
-use std::thread::JoinHandle;
 
 type Directory = Arc<HashMap<String, Vec<u8>>>;
 
