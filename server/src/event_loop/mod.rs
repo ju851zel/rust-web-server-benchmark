@@ -54,9 +54,6 @@ pub fn start_old_server(ip: String, port: i32, dir: Files) {
             }
         }
 
-
-        // sleep(Duration::new(1, 0));
-
         match get_connection(&listener) {
             Some(stream) => reading_conns.push((stream, [0; 2048])),
             _ => {}

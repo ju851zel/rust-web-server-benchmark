@@ -12,7 +12,7 @@ pub struct Queue<T> where T: GeneralEvent {
     pub events: Vec<T>,
     pub wait_timeout: Timespec,
     pub dir: Directory,
-    pub fd : i32 ,
+    pub fd: i32,
 }
 
 impl<T> Queue<T> where T: GeneralEvent {
@@ -25,10 +25,15 @@ impl<T> Queue<T> where T: GeneralEvent {
         })
     }
 
-    pub fn add(&mut self, event: T) -> Result<(), String> {
+    pub fn add(&mut self, event: T) -> Result<(), T> {
         self.events.push(event);
         let kevent = self.events.last().unwrap().get_kevent();
-        put_kevent_in_kqueue(self.fd, &kevent, &self.wait_timeout)
+        let worked = put_kevent_in_kqueue(self.fd, &kevent, &self.wait_timeout);
+        if let Err(err) = worked {
+            println!("{}", err);
+            return Err(self.events.remove(self.events.len() - 1));
+        }
+        Ok(())
     }
 
     pub fn poll(&mut self) -> Result<Vec<T>, String> {

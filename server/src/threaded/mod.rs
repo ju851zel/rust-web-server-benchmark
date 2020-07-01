@@ -51,6 +51,9 @@ fn handle_connection(mut stream: TcpStream, dir: Directory) {
 }
 
 fn send_response(mut stream: TcpStream, mut response: Response) {
-    stream.write(&response.make_sendable()).unwrap();
+    let worked = stream.write(&response.make_sendable());
+    if let Err(err) =  worked {
+         println!("Error while sending response: {}",err)
+    }
     stream.flush().unwrap();
 }
