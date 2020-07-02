@@ -6,6 +6,11 @@ use std::io::{Read, Write};
 use crate::response::Response;
 use crate::request::Request;
 use crate::Directory;
+use crate::threaded::server::{ServerStats, RequestResult};
+use std::time::{Instant, SystemTime};
+use chrono::Utc;
+use std::path::Path;
+use std::{fs, env};
 
 mod server;
 
@@ -15,6 +20,7 @@ pub fn start_server(ip: String, port: i32, thread_pool_size: i32, dir: Arc<HashM
     let pool = ThreadPool::new(thread_pool_size as usize);
 
     let address = format!("{}:{}", ip, port);
+    let stats = Arc::new(ServerStats { request_results: vec![] });
 
     let listener = match TcpListener::bind(address) {
         Ok(listener) => listener,
@@ -33,24 +39,31 @@ pub fn start_server(ip: String, port: i32, thread_pool_size: i32, dir: Arc<HashM
         };
 
         let dir = dir.clone();
+        let stats = stats.clone();
         pool.execute(|| {
-            handle_connection(connection, dir);
+            handle_connection(connection, dir, stats);
         });
     }
 }
 
-fn handle_connection(mut stream: TcpStream, dir: Directory) {
+fn handle_connection(mut stream: TcpStream, dir: Directory, stats: Arc<ServerStats>) {
     let mut buffer = [0; 2048];
 
     if let Err(err) = stream.read(&mut buffer) {
         println!("Threaded: Error while processing request. Ignoring request");
         return;
     }
-    let response = Request::create_response(buffer, dir);
-    send_response(stream, response);
+
+    let start = Instant::now();
+    let mut response = Request::create_response(buffer, dir);
+
+    send_response(stream, &mut response);
+    let duration = start.elapsed().as_millis();
+    let b = Utc::now().date();
+    let a = RequestResult { response_code: response.response_identifiers.method.id, response_time: duration, time: b, requested_resource: "a".to_string()};
 }
 
-fn send_response(mut stream: TcpStream, mut response: Response) {
+fn send_response(mut stream: TcpStream, response: &mut Response) {
     let worked = stream.write(&response.make_sendable());
     if let Err(err) =  worked {
          println!("Error while sending response: {}",err)

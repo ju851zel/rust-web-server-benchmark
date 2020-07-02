@@ -1,8 +1,8 @@
 use std::collections::HashMap;
-use std::error;
+use std::{error, fs};
 use core::fmt;
 use crate::Directory;
-use crate::response::Response;
+use crate::response::{Response, insert_dynamic_html};
 
 type Result<T> = std::result::Result<T, Box<dyn error::Error>>;
 
@@ -49,16 +49,18 @@ impl Request {
         let request = match String::from_utf8(buffer.to_vec()) {
             Ok(string) => string,
             Err(_) => {
-                println!("Request could not be interpreted as string.");
-                return Response::default_bad_request()
+                let mut response = Response::default_bad_request();
+                response.dynamic_error_response("Request could not be interpreted as string.".to_string());
+                return response
             }
         };
 
         let key = match Request::read_request(&request) {
             Ok(request) => request.request_identifiers.path,
             Err(err) => {
-                println!("Request could not be interpreted as string.");
-                return Response::default_bad_request()
+                let mut response = Response::default_bad_request();
+                response.dynamic_error_response("Request could not be interpreted as string.".to_string());
+                return response
             }
         };
 
@@ -69,8 +71,9 @@ impl Request {
                 response
             }
             None => {
-                println!("Requested resource {} could not be found.", key);
-                Response::default_not_found()
+                let mut response = Response::default_not_found();
+                response.dynamic_error_response(format!("Requested resource {} could not be found.", key));
+                response
             }
         }
     }

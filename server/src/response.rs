@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::path::Path;
 use std::ffi::OsStr;
+use std::fs;
 
 #[derive(Debug)]
 pub struct Response {
@@ -18,7 +19,7 @@ pub struct ResponseIdentifiers {
 #[derive(Debug, Eq, PartialEq)]
 pub struct ResponseType {
     name: String,
-    id: u32,
+    pub id: u32,
 }
 
 impl ResponseType {
@@ -69,6 +70,17 @@ impl Response {
         }
     }
 
+    pub fn dynamic_error_response(&mut self, error_message: String) {
+        let mut map = HashMap::new();
+        let error_code: &str = &self.response_identifiers.method.id.to_string();
+        let error_code_full: &str = &format!("{} {}", error_code, self.response_identifiers.method.name);
+
+        map.insert("{{ErrorCode}}", error_code_full);
+        map.insert("{{ErrorMessage}}", &error_message);
+
+        insert_dynamic_html(self, "..\\_dist\\error_page.html", map);
+    }
+
     pub fn make_sendable(&mut self) -> Vec<u8> {
         let mut ident = self.response_identifiers.make_sendable();
         let mut headers = self.make_headers_sendable();
@@ -108,6 +120,17 @@ impl Response {
         }
         vec
     }
+}
+
+pub fn insert_dynamic_html(mut response: &mut Response, path: &str, templating_replacements: HashMap<&str, &str>) {
+    response.add_content_type("_.html".to_string());
+    let mut resource = fs::read_to_string(path).unwrap();
+
+    for replacements in templating_replacements {
+        resource = resource.replace(replacements.0, &replacements.1);
+    }
+
+    response.body = resource.as_bytes().to_vec();
 }
 
 
