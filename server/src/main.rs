@@ -1,39 +1,71 @@
-use cli;
 use std::sync::Arc;
 use std::collections::HashMap;
 use std::thread;
+use std::path::Path;
 
-mod my_server;
+mod threaded;
 mod rouille;
-mod hyper_server;
+mod event_loop;
+mod request;
+mod response;
+mod file;
+mod cli;
 
+use colored::Colorize;
+
+type Directory = Arc<HashMap<String, Vec<u8>>>;
 
 fn main() {
-    let (ip, port, directory, thread_pool_size) = cli::start_cli();
+    println!("Starting the webserver!");
 
-    let files: Arc<HashMap<String, Vec<u8>>> = Arc::new(files::load_directory(directory.as_str()));
+    let (ip, port, dir, threads, type_) = cli::start_cli();
 
+    println!("Serving directory: {}", dir.cyan());
 
-    let my_files = files.clone();
-    let hyper_files = files.clone();
-    let rouille_files = files.clone();
-    let my_ip = ip.clone();
-    let hyper_ip = ip.clone();
-    let rouille_ip = ip.clone();
+    let dir = load_provided_directory(Path::new(&dir));
 
-    let my = thread::spawn( move || {
-        my_server::start_server(my_ip, port, thread_pool_size, my_files);
-    });
+    match &type_[..] {
+        "threaded" => {
+            println!("Server is a {} server\n Server is listening on {}:{}",
+                     type_.cyan(), ip.to_string().cyan(), port.to_string().cyan());
+            threaded::start_server(ip, port, threads, dir)
+        }
+        "event_loop" => {
+            println!("Server is a {} server\n Server is listening on {}:{}",
+                     type_.cyan(), ip.to_string().cyan(), port.to_string().cyan());
+            event_loop::start_server(ip, port, dir)
+        }
+        "rouille" => {
+            println!("Server is a {} server\n Server is listening on {}:{}",
+                     type_.cyan(), ip.to_string().cyan(), port.to_string().cyan());
+            rouille::start_server(ip, port, dir)
+        }
+        _ => {
+            let ip_t = ip.clone();
+            let port_t = port + 1;
+            let dir_t = dir.clone();
+            thread::spawn(move || threaded::start_server(ip_t, port_t, threads, dir_t));
 
-    let hyper = thread::spawn( move || {
-        hyper_server::start_server(hyper_ip, port + 1, hyper_files);
-    });
+            let ip_e = ip.clone();
+            let port_e = port + 2;
+            let dir_e = dir.clone();
+            thread::spawn(move || event_loop::start_server(ip_e, port_e, dir_e));
 
-    let rouille = thread::spawn( move || {
-        rouille::start_server(rouille_ip, port + 2, rouille_files);
-    });
+            println!("Starting all servers\n\
+                      Threaded server is listening on {ip}:{port_t}\n\
+                      Event loop server is listening on {ip}:{port_e}\n\
+                      Rouille server is listening on {ip}:{port}",
+                     ip = ip.to_string().cyan(),
+                     port_t = (port_t).to_string().cyan(),
+                     port_e = (port_e).to_string().cyan(),
+                     port = (port).to_string().cyan());
 
-    my.join().unwrap();
-    hyper.join().unwrap();
-    rouille.join().unwrap();
+            rouille::start_server(ip, port, dir);
+        }
+    };
 }
+
+fn load_provided_directory(dir: &Path) -> Directory {
+    Arc::new(file::load_directory(dir))
+}
+

@@ -1,6 +1,8 @@
 use std::collections::HashMap;
 use std::error;
 use core::fmt;
+use crate::Directory;
+use crate::response::Response;
 
 type Result<T> = std::result::Result<T, Box<dyn error::Error>>;
 
@@ -22,23 +24,57 @@ pub struct RequestIdentifiers {
 #[derive(Debug)]
 #[derive(Eq, PartialEq)]
 pub enum RequestType {
-    GET,
-    POST,
+    Get,
+    Post,
     //todo add more cases
 }
 
 #[derive(Debug)]
-struct InvalidRequest;
+struct InvalidRequest {
+    message: String
+}
 
 impl fmt::Display for InvalidRequest {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Could not parse request. Wrong Format.")
+        write!(f, "Could not parse request.{}", self.message)
     }
 }
 
 impl error::Error for InvalidRequest {}
 
 impl Request {
+    pub fn create_response(buffer: [u8; 2048], dir: Directory) -> Response {
+        let mut response = Response::default_ok();
+
+        let request = match String::from_utf8(buffer.to_vec()) {
+            Ok(string) => string,
+            Err(_) => {
+                println!("Request could not be interpreted as string.");
+                return Response::default_bad_request()
+            }
+        };
+
+        let key = match Request::read_request(&request) {
+            Ok(request) => request.request_identifiers.path,
+            Err(err) => {
+                println!("Request could not be interpreted as string.");
+                return Response::default_bad_request()
+            }
+        };
+
+        match dir.get(&key) {
+            Some(resource) => {
+                response.add_content_type(key);
+                response.body = resource.clone();
+                response
+            }
+            None => {
+                println!("Requested resource {} could not be found.", key);
+                Response::default_not_found()
+            }
+        }
+    }
+
     pub fn read_request(buffer: &str) -> Result<Request> {
         let lines: Vec<&str> = buffer.split("\r\n").collect();
         let request_identifiers = Request::get_request_identifiers(&lines)?;
@@ -53,17 +89,24 @@ impl Request {
 
     fn get_request_identifiers(lines: &Vec<&str>) -> Result<RequestIdentifiers> {
         let first_line_content: Vec<&str> = lines
-            .get(0).ok_or(InvalidRequest)?
+            .get(0).ok_or(InvalidRequest{message: "First line does not confirm HTTP protocol.".to_string()})?
             .split_whitespace().collect();
 
-        let req_type = match first_line_content.get(0).ok_or(InvalidRequest)? {
-            &"GET" => RequestType::GET,
-            &"POST" => RequestType::POST,
-            _ => RequestType::GET
+        let req_type = match first_line_content
+            .get(0)
+            .ok_or(InvalidRequest{message: "HTTP Type not specified".to_string()})? {
+            &"GET" => RequestType::Get,
+            &"POST" => RequestType::Post,
+            _ => RequestType::Get
         };
 
-        let req_path = first_line_content.get(1).ok_or(InvalidRequest)?;
-        let req_version = first_line_content.get(2).ok_or(InvalidRequest)?;
+        let req_path = first_line_content.get(1)
+            .ok_or(InvalidRequest{message: "path not provided".to_string()})?;
+        let req_path = req_path.split("?").collect::<Vec<&str>>();
+        let req_path = req_path.get(0)
+            .ok_or(InvalidRequest{message: "path not provided".to_string()})?;
+        let req_version = first_line_content.get(2)
+            .ok_or(InvalidRequest{message: "http version not specified.".to_string()})?;
 
         Ok(RequestIdentifiers {
             method: req_type,
@@ -76,7 +119,7 @@ impl Request {
         Ok(lines.into_iter()
             .skip(1)
             .map(|line| -> Vec<&str> { line.splitn(2, ": ").collect() })
-            .filter(|header_pair|  header_pair.len() == 2)
+            .filter(|header_pair| header_pair.len() == 2)
             .map(|header_pair|
                 ((header_pair.get(0).unwrap().to_string()), header_pair.get(1).unwrap().to_string())
             )
@@ -107,7 +150,7 @@ mod tests {
             "Sec-Fetch-Dest: document\r\n",
         ];
 
-        let mut result= HashMap::new();
+        let mut result = HashMap::new();
         result.insert("Host", "localhost:8080\r\n");
         result.insert("Connection", "keep-alive\r\n");
         result.insert("Cache-Control", "max-age=0\r\n");
@@ -135,7 +178,7 @@ mod tests {
             "Connection keep-alive\r\n",
         ];
 
-        let mut result= HashMap::new();
+        let mut result = HashMap::new();
         result.insert("Host", "localhost:8080\r\n");
 
         let result: HashMap<String, String> =
@@ -153,7 +196,7 @@ mod tests {
             "UselessHeader: Colon:Test\r\n"
         ];
 
-        let mut result= HashMap::new();
+        let mut result = HashMap::new();
         result.insert("Host", "localhost:8080\r\n");
         result.insert("UselessHeader", "Colon:Test\r\n");
 
@@ -170,7 +213,7 @@ mod tests {
             "GET /hello HTTP/1.1\r\n"
         ];
 
-        let mut result= HashMap::new();
+        let mut result = HashMap::new();
 
         assert_eq!(Request::get_headers(&request).unwrap(), result)
     }
@@ -181,8 +224,8 @@ mod tests {
             "GET /hello HTTP/1.1\r\n"
         ];
 
-        let mut result= RequestIdentifiers {
-            method: RequestType::GET,
+        let mut result = RequestIdentifiers {
+            method: RequestType::Get,
             path: "/hello".to_string(),
             version: "HTTP/1.1".to_string(),
         };

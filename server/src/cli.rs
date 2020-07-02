@@ -6,20 +6,20 @@ use clap::{Arg, App, ArgMatches};
 /// - the address for the server to listen on
 /// - the directory the server should serve
 /// - the number of threads the thread pool should have
-pub fn start_cli() -> (String, i32, String, i32) {
+pub fn start_cli() -> (String, i32, String, i32, String) {
     let cli = create_matchers();
 
     let ip = cli.value_of("ip").unwrap();
     let port = cli.value_of("port").unwrap().parse::<u32>().unwrap();
     let dir = cli.value_of("dir").unwrap();
     let threads = cli.value_of("threads").unwrap().parse::<u32>().unwrap();
-    println!("Serving directory: {}", dir);
-    println!("Listening on {}:{} with {} threads", ip, port, threads);
+    let type_ = cli.value_of("type").unwrap();
 
     (ip.to_string(),
      port as i32,
      dir.to_string(),
-     threads as i32)
+     threads as i32,
+     type_.to_string())
 }
 
 
@@ -63,22 +63,39 @@ fn create_matchers() -> ArgMatches<'static> {
             .value_name("DIR")
             .help("The directory the server should serve")
             .takes_value(true))
+        .arg(Arg::with_name("type")
+            .short("y")
+            .required(true)
+            .long("server_type")
+            .default_value("all")
+            .validator(|value| valid_type(value))
+            .value_name("TYPE")
+            .help("The type of the server [threaded|event_loop|rouille|all]")
+            .takes_value(true))
         .get_matches();
 }
 
 
 fn valid_port(string: String) -> Result<(), String> {
-    return match string.parse::<u32>() {
+    match string.parse::<u32>() {
         Ok(num) if num > 1024 && num < 65536 => { Ok(()) }
-        _ => { Err("Please provide a valid port".to_string()) }
-    };
+        _ => { Err("Please provide a valid port (>1024)".to_string()) }
+    }
+}
+
+fn valid_type(s: String) -> Result<(), String> {
+    if s == "threaded" || s == "event_loop" || s == "rouille" || s == "all" {
+        Ok(())
+    } else {
+        Err("Please select a server type [threaded|event_loop|rouille]".to_string())
+    }
 }
 
 fn valid_threads(string: String) -> Result<(), String> {
-    return match string.parse::<u32>() {
-        Ok(num) if num > 2 => { Ok(()) }
-        _ => { Err("Please provide a valid amount of threads".to_string()) }
-    };
+    match string.parse::<u32>() {
+        Ok(num) if num >= 2 => { Ok(()) }
+        _ => { Err("Please provide a valid amount of threads (>=2)".to_string()) }
+    }
 }
 
 
@@ -91,7 +108,9 @@ fn valid_ip(ip: String) -> Result<(), String> {
 
     if blocks == 4 {
         Ok(())
-    } else { Err("Please provide a valid IPv4. e.g. 127.0.0.1".to_string()) }
+    } else {
+        Err("Please provide a valid IPv4. e.g. 127.0.0.1".to_string())
+    }
 }
 
 
