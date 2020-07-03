@@ -4,15 +4,18 @@ use std::net::{TcpListener, TcpStream};
 use server::ThreadPool;
 use std::io::{Read, Write};
 use crate::response::Response;
-use crate::request::Request;
 use crate::Directory;
 use crate::threaded::server::{ServerStats, RequestResult};
-use std::time::{Instant, SystemTime};
+use std::time::Instant;
 use chrono::Utc;
-use std::path::Path;
-use std::{fs, env};
+use crate::request::parse_request;
+use crate::threaded::request_handler::handle_request;
+use crate::threaded::controller::error_controller::error_response_400;
+use std::error::Error;
 
 mod server;
+mod request_handler;
+mod controller;
 
 /// Starts the server listening on the address,
 /// with the amount of threads provided by thread_pool_size.
@@ -24,7 +27,7 @@ pub fn start_server(ip: String, port: i32, thread_pool_size: i32, dir: Arc<HashM
 
     let listener = match TcpListener::bind(address) {
         Ok(listener) => listener,
-        Err(err) => {
+        Err(_) => {
             println!("Threaded: TCP bind error. Consider a restart of the programm");
             return;
         }
@@ -32,43 +35,58 @@ pub fn start_server(ip: String, port: i32, thread_pool_size: i32, dir: Arc<HashM
     for stream in listener.incoming() {
         let connection = match stream {
             Ok(stream) => stream,
-            Err(e) => {
+            Err(_) => {
                 println!("Threaded: Connection error. Ignoring request");
                 continue;
             }
         };
 
         let dir = dir.clone();
-        let stats2 = stats.clone();
+        let stats_change = stats.clone();
+        let stats_view = stats.clone();
         pool.execute(move|| {
-            let mut results = stats2.request_results.lock().unwrap();
-            let result = stat_wrapper(handle_connection,connection, dir);
-            results.push(result.unwrap());
+            let result = stat_wrapper(handle_connection, connection, dir, stats_view);
+            let mut results = stats_change.request_results.lock().unwrap();
+            match result {
+                Some(res) => results.push(res),
+                _ => ()
+            }
         });
-
-        println!("{:?}", stats);
     }
 }
 
-fn stat_wrapper(f: fn(TcpStream, Directory) -> Option<(u32, String)>, mut stream: TcpStream, dir: Directory) -> Option<RequestResult> {
-    let date = Utc::now().date();
+fn stat_wrapper(f: fn(TcpStream, Directory, Arc<ServerStats>) -> Option<(u32, String)>, stream: TcpStream, dir: Directory, stats: Arc<ServerStats>) -> Option<RequestResult> {
+    let date = Utc::now().naive_local();
     let start = Instant::now();
-    let connection_result = f(stream, dir);
+    let connection_result = f(stream, dir, stats);
     let duration = start.elapsed().as_millis();
-    Some(RequestResult { response_code: connection_result.unwrap().0, response_time: duration, time: date, requested_resource: connection_result.unwrap().1})
+
+    match connection_result {
+        Some(res) => Some(RequestResult { response_code: res.0, response_time: duration, time: date, requested_resource: res.1}),
+        None => None
+    }
 }
 
-fn handle_connection(mut stream: TcpStream, dir: Directory) -> Option<(u32, String)> {
+fn handle_connection(mut stream: TcpStream, dir: Directory, stats: Arc<ServerStats>) -> Option<(u32, String)> {
     let mut buffer = [0; 2048];
 
-    if let Err(err) = stream.read(&mut buffer) {
+    if let Err(_) = stream.read(&mut buffer) {
         println!("Threaded: Error while processing request. Ignoring request");
         return None
     }
 
-    let mut response = Request::create_response(buffer, dir);
-    send_response(stream, &mut response.0);
-    Some((response.0.response_identifiers.method.id, response.1))
+    let request = match parse_request(buffer) {
+        Ok(req) => req,
+        Err(e) => {
+            send_response(stream, &mut error_response_400(e.description().to_string()));
+            return None
+        }
+    };
+
+    let mut response = handle_request(&request, dir, stats);
+
+    send_response(stream, &mut response);
+    Some((response.response_identifiers.method.id, request.request_identifiers.path))
 }
 
 fn send_response(mut stream: TcpStream, response: &mut Response) {

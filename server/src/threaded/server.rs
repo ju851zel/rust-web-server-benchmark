@@ -1,6 +1,6 @@
 use std::sync::{mpsc::Sender, mpsc::channel, mpsc::Receiver, Arc, Mutex};
 use std::thread;
-use chrono::{Date, Utc};
+use chrono::{Date, Utc, NaiveDateTime};
 
 
 #[derive(Debug)]
@@ -18,7 +18,7 @@ pub struct ServerStats {
 pub struct RequestResult {
     pub response_code: u32,
     pub requested_resource: String,
-    pub time: Date<Utc>,
+    pub time: NaiveDateTime,
     pub response_time: u128
 }
 
