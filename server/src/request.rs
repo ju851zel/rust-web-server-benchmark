@@ -43,7 +43,7 @@ impl fmt::Display for InvalidRequest {
 impl error::Error for InvalidRequest {}
 
 impl Request {
-    pub fn create_response(buffer: [u8; 2048], dir: Directory) -> Response {
+    pub fn create_response(buffer: [u8; 2048], dir: Directory) -> (Response, String) {
         let mut response = Response::default_ok();
 
         let request = match String::from_utf8(buffer.to_vec()) {
@@ -51,7 +51,7 @@ impl Request {
             Err(_) => {
                 let mut response = Response::default_bad_request();
                 response.dynamic_error_response("Request could not be interpreted as string.".to_string());
-                return response
+                return (response, "/".to_string())
             }
         };
 
@@ -60,20 +60,20 @@ impl Request {
             Err(err) => {
                 let mut response = Response::default_bad_request();
                 response.dynamic_error_response("Request could not be interpreted as string.".to_string());
-                return response
+                return (response, "/".to_string())
             }
         };
 
         match dir.get(&key) {
             Some(resource) => {
-                response.add_content_type(key);
+                response.add_content_type(key.to_string());
                 response.body = resource.clone();
-                response
+                (response, key.to_string())
             }
             None => {
                 let mut response = Response::default_not_found();
                 response.dynamic_error_response(format!("Requested resource {} could not be found.", key));
-                response
+                (response, key.to_string())
             }
         }
     }

@@ -9,10 +9,12 @@ pub struct ThreadPool {
     transmitter: Sender<Job>,
 }
 
+#[derive(Debug)]
 pub struct ServerStats {
-    pub request_results: Vec<RequestResult>
+    pub request_results: Mutex<Vec<RequestResult>>
 }
 
+#[derive(Debug)]
 pub struct RequestResult {
     pub response_code: u32,
     pub requested_resource: String,
