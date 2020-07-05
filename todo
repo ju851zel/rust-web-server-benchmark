@@ -1,0 +1,13 @@
+- video
+
+joerg
+- error page in resource independent from dist dir.
+- while server is running dont do any file operations, do them beofer the server starts
+- stats mehr uebersichltihckeit und vlt geastm anzahl erfolgreich und nciht erfolgreich etc.
+- unwraps ersetzen durch richtige fehlerbehandlung
+
+julian
+- nonblocking resouce lag
+- unwraps ersetzen durch richtige fehlerbehandlung
+- funktioniert der penetrator wie er soll?
+- kann nonblocking nicht starten wenn kein BSD system
