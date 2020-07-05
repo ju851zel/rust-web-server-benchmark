@@ -3,8 +3,9 @@ use std::collections::HashMap;
 use std::net::{TcpListener, TcpStream};
 use std::io::{Read, Write};
 use crate::response::Response;
-use crate::request::Request;
+use crate::request::{Request, parse_request};
 use futures::io::{ErrorKind};
+use std::error::Error;
 
 type Files = Arc<HashMap<String, Vec<u8>>>;
 type Buffer = [u8; 2048];
@@ -22,15 +23,9 @@ pub fn start_server(ip: String, port: i32, dir: Files) {
 fn create_response(buffer: Buffer, files: Files) -> Vec<u8> {
     let mut response = Response::default_ok();
 
-    let utf8_buffer = String::from_utf8(buffer.to_vec()); //todo https
-    if utf8_buffer.is_err() {
-        println!("Request could not be interpreted as utf-8");
-        return Response::default_bad_request().make_sendable();
-    };
-
-    let request = Request::read_request(&utf8_buffer.unwrap());
+    let request = parse_request(buffer);
     if request.is_err() {
-        println!("Request is invalid");
+        println!("{}",request.err().unwrap().description().to_string());
         return Response::default_bad_request().make_sendable();
     };
 
