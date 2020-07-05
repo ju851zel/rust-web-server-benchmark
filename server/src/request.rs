@@ -1,8 +1,6 @@
 use std::collections::HashMap;
 use std::error;
 use core::fmt;
-use crate::Directory;
-use crate::response::Response;
 
 type Result<T> = std::result::Result<T, Box<dyn error::Error>>;
 
@@ -40,94 +38,72 @@ impl fmt::Display for InvalidRequest {
     }
 }
 
-impl error::Error for InvalidRequest {}
-
-impl Request {
-    pub fn create_response(buffer: [u8; 2048], dir: Directory) -> Response {
-        let mut response = Response::default_ok();
-
-        let request = match String::from_utf8(buffer.to_vec()) {
-            Ok(string) => string,
-            Err(_) => {
-                println!("Request could not be interpreted as string.");
-                return Response::default_bad_request()
-            }
-        };
-
-        let key = match Request::read_request(&request) {
-            Ok(request) => request.request_identifiers.path,
-            Err(err) => {
-                println!("Request could not be interpreted as string.");
-                return Response::default_bad_request()
-            }
-        };
-
-        match dir.get(&key) {
-            Some(resource) => {
-                response.add_content_type(key);
-                response.body = resource.clone();
-                response
-            }
-            None => {
-                println!("Requested resource {} could not be found.", key);
-                Response::default_not_found()
-            }
-        }
-    }
-
-    pub fn read_request(buffer: &str) -> Result<Request> {
-        let lines: Vec<&str> = buffer.split("\r\n").collect();
-        let request_identifiers = Request::get_request_identifiers(&lines)?;
-        let headers = Request::get_headers(&lines.into_iter().skip(1).collect())?;
-
-        Ok(Request {
-            request_identifiers,
-            headers,
-            body: "".to_string(), //todo change to real implementation
-        })
-    }
-
-    fn get_request_identifiers(lines: &Vec<&str>) -> Result<RequestIdentifiers> {
-        let first_line_content: Vec<&str> = lines
-            .get(0).ok_or(InvalidRequest{message: "First line does not confirm HTTP protocol.".to_string()})?
-            .split_whitespace().collect();
-
-        let req_type = match first_line_content
-            .get(0)
-            .ok_or(InvalidRequest{message: "HTTP Type not specified".to_string()})? {
-            &"GET" => RequestType::Get,
-            &"POST" => RequestType::Post,
-            _ => RequestType::Get
-        };
-
-        let req_path = first_line_content.get(1)
-            .ok_or(InvalidRequest{message: "path not provided".to_string()})?;
-        let req_path = req_path.split("?").collect::<Vec<&str>>();
-        let req_path = req_path.get(0)
-            .ok_or(InvalidRequest{message: "path not provided".to_string()})?;
-        let req_version = first_line_content.get(2)
-            .ok_or(InvalidRequest{message: "http version not specified.".to_string()})?;
-
-        Ok(RequestIdentifiers {
-            method: req_type,
-            path: req_path.to_string(),
-            version: req_version.to_string(),
-        })
-    }
-
-    fn get_headers(lines: &Vec<&str>) -> Result<HashMap<String, String>> {
-        Ok(lines.into_iter()
-            .skip(1)
-            .map(|line| -> Vec<&str> { line.splitn(2, ": ").collect() })
-            .filter(|header_pair| header_pair.len() == 2)
-            .map(|header_pair|
-                ((header_pair.get(0).unwrap().to_string()), header_pair.get(1).unwrap().to_string())
-            )
-            .collect()
-        )
+impl error::Error for InvalidRequest {
+    fn description(&self) -> &str {
+        &self.message
     }
 }
 
+pub fn parse_request(buffer: [u8; 2048]) -> Result<Request> {
+    let raw_request = match String::from_utf8(buffer.to_vec()) {
+        Ok(string) => string,
+        Err(_) => return Err(Box::new(Box::new(InvalidRequest{message: "Request could not be interpreted as string.".to_string()})))
+    };
+
+    read_request(&raw_request)
+}
+
+fn read_request(buffer: &str) -> Result<Request> {
+    let lines: Vec<&str> = buffer.split("\r\n").collect();
+    let request_identifiers = get_request_identifiers(&lines)?;
+    let headers = get_headers(&lines.into_iter().skip(1).collect())?;
+
+    Ok(Request {
+        request_identifiers,
+        headers,
+        body: "".to_string(), //todo change to real implementation
+    })
+}
+
+fn get_request_identifiers(lines: &Vec<&str>) -> Result<RequestIdentifiers> {
+    let first_line_content: Vec<&str> = lines
+        .get(0).ok_or(InvalidRequest{message: "First line does not confirm HTTP protocol.".to_string()})?
+        .split_whitespace().collect();
+
+    let req_type = match first_line_content
+        .get(0)
+        .ok_or(InvalidRequest{message: "HTTP Type not specified".to_string()})? {
+        &"GET" => RequestType::Get,
+        &"POST" => RequestType::Post,
+        _ => RequestType::Get
+    };
+
+    let req_path = first_line_content.get(1)
+        .ok_or(InvalidRequest{message: "path not provided".to_string()})?;
+    let req_path = req_path.split("?").collect::<Vec<&str>>();
+    let req_path = req_path.get(0)
+        .ok_or(InvalidRequest{message: "path not provided".to_string()})?;
+    let req_version = first_line_content.get(2)
+        .ok_or(InvalidRequest{message: "http version not specified.".to_string()})?;
+
+    Ok(RequestIdentifiers {
+        method: req_type,
+        path: req_path.to_string(),
+        version: req_version.to_string(),
+    })
+}
+
+fn get_headers(lines: &Vec<&str>) -> Result<HashMap<String, String>> {
+    Ok(lines.into_iter()
+        .skip(1)
+        .map(|line| -> Vec<&str> { line.splitn(2, ": ").collect() })
+        .filter(|header_pair| header_pair.len() == 2)
+        .map(|header_pair|
+            ((header_pair.get(0).unwrap().to_string()), header_pair.get(1).unwrap().to_string())
+        )
+        .collect()
+    )
+}
 
 #[cfg(test)]
 mod tests {
@@ -167,7 +143,7 @@ mod tests {
             result.iter()
                 .map(|str| (str.0.to_string(), str.1.to_string()))
                 .collect();
-        assert_eq!(Request::get_headers(&request).unwrap(), result)
+        assert_eq!(get_headers(&request).unwrap(), result)
     }
 
     #[test]
@@ -185,7 +161,7 @@ mod tests {
             result.iter()
                 .map(|str| (str.0.to_string(), str.1.to_string()))
                 .collect();
-        assert_eq!(Request::get_headers(&request).unwrap(), result)
+        assert_eq!(get_headers(&request).unwrap(), result)
     }
 
     #[test]
@@ -204,7 +180,7 @@ mod tests {
             result.iter()
                 .map(|str| (str.0.to_string(), str.1.to_string()))
                 .collect();
-        assert_eq!(Request::get_headers(&request).unwrap(), result)
+        assert_eq!(get_headers(&request).unwrap(), result)
     }
 
     #[test]
@@ -215,7 +191,7 @@ mod tests {
 
         let mut result = HashMap::new();
 
-        assert_eq!(Request::get_headers(&request).unwrap(), result)
+        assert_eq!(get_headers(&request).unwrap(), result)
     }
 
     #[test]
@@ -230,7 +206,7 @@ mod tests {
             version: "HTTP/1.1".to_string(),
         };
 
-        assert_eq!(Request::get_request_identifiers(&request).unwrap(), result)
+        assert_eq!(get_request_identifiers(&request).unwrap(), result)
     }
 
     #[test]
@@ -239,13 +215,13 @@ mod tests {
             "GET HTTP/1.1\r\n"
         ];
 
-        assert_eq!(Request::get_request_identifiers(&request).err().unwrap().to_string(), "Could not parse request. Wrong Format.")
+        assert_eq!(get_request_identifiers(&request).err().unwrap().to_string(), "Could not parse request.http version not specified.")
     }
 
     #[test]
     fn get_request_identifiers_test_empty() {
         let request = vec![];
 
-        assert_eq!(Request::get_request_identifiers(&request).err().unwrap().to_string(), "Could not parse request. Wrong Format.")
+        assert_eq!(get_request_identifiers(&request).err().unwrap().to_string(), "Could not parse request.First line does not confirm HTTP protocol.")
     }
 }

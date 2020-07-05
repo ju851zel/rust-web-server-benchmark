@@ -1,11 +1,25 @@
 use std::sync::{mpsc::Sender, mpsc::channel, mpsc::Receiver, Arc, Mutex};
 use std::thread;
+use chrono::{Date, Utc, NaiveDateTime};
 
 
 #[derive(Debug)]
 pub struct ThreadPool {
     workers: Vec<Worker>,
     transmitter: Sender<Job>,
+}
+
+#[derive(Debug)]
+pub struct ServerStats {
+    pub request_results: Mutex<Vec<RequestResult>>
+}
+
+#[derive(Debug)]
+pub struct RequestResult {
+    pub response_code: u32,
+    pub requested_resource: String,
+    pub time: NaiveDateTime,
+    pub response_time: u128
 }
 
 impl ThreadPool {
