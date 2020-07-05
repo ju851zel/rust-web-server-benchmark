@@ -1,4 +1,4 @@
-use crate::event_loop::{ffi, Files};
+use crate::event_loop::{ffi, Files, create_response};
 use std::net::{TcpListener};
 use core::ptr;
 use crate::event_loop::ffi::{Queue, Event, ListenerEvent};
@@ -35,7 +35,7 @@ pub fn start_server(ip: String, port: i32, dir: Files) {
             handle_incoming(&mut incoming_q, &mut reading_q)
         }
         if reading_q.events.len() > 0 {
-            handle_reading(&reading_q, &mut writing_q)
+            handle_reading(&mut reading_q, &mut writing_q)
         }
         if writing_q.events.len() > 0 {
             handle_writing(&mut writing_q)
@@ -56,7 +56,7 @@ fn handle_writing(writing_q: &mut Queue<Event>) {
                 0
             }
             Ok(bytes_read) => {
-                println!("I wrote {} bytes", bytes_read);
+                // println!("I wrote {} bytes", bytes_read);
                 bytes_read
             }
         };
@@ -66,7 +66,7 @@ fn handle_writing(writing_q: &mut Queue<Event>) {
     }
 }
 
-fn handle_reading(mut reading_q: &Queue<Event>, writing_q: &mut Queue<Event>) {
+fn handle_reading(mut reading_q: &mut Queue<Event>, writing_q: &mut Queue<Event>) {
     let ready_reading_events = reading_q.poll().unwrap();
     for mut reading_event in ready_reading_events {
         match reading_event.stream.read(&mut reading_event.data) {
@@ -77,7 +77,7 @@ fn handle_reading(mut reading_q: &Queue<Event>, writing_q: &mut Queue<Event>) {
                 // println!("I read {} bytes", bytes_read);
             }
         };
-        let mut response = Request::create_response(reading_event.data, reading_q.dir.clone()).make_sendable();
+        let mut response = create_response(reading_event.data, reading_q.dir.clone());
         let event = Event::new_write(reading_event.stream, from_slice(&response[..]));
         let worked = writing_q.add(event);
         if let Err(err) = worked {
