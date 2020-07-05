@@ -26,7 +26,11 @@ pub async fn penetrate(num_of_requests: usize, url: String) {
 
 fn generate_result(request_results: Vec<Result<(u16, u128), reqwest::Error>>, duration: u128, url: String) {
     let num_of_requests = &request_results.len();
-    println!("{:#?}", request_results);
+    for result in &request_results {
+        if result.is_err() {
+            println!("{:#?}", result);
+        }
+    }
 
     let success: Vec<&(u16, u128)> = request_results.iter()
         .filter(|&r| r.is_ok() && (200 <= r.as_ref().unwrap_or(&(0, 0)).0) && 300 > r.as_ref().unwrap_or(&(0, 0)).0)
