@@ -2,6 +2,8 @@ use std::collections::HashMap;
 use std::path::Path;
 use std::ffi::OsStr;
 use std::fs;
+use crate::Directory;
+use std::sync::Arc;
 
 #[derive(Debug)]
 pub struct Response {
@@ -70,7 +72,7 @@ impl Response {
         }
     }
 
-    pub fn dynamic_error_response(&mut self, error_message: String) {
+    pub fn dynamic_error_response(&mut self, error_message: String, resources: Arc<HashMap<String, String>>) {
         let mut map = HashMap::new();
         let error_code: &str = &self.response_identifiers.method.id.to_string();
         let error_code_full: &str = &format!("{} {}", error_code, self.response_identifiers.method.name);
@@ -78,7 +80,9 @@ impl Response {
         map.insert("{{ErrorCode}}", error_code_full);
         map.insert("{{ErrorMessage}}", &error_message);
 
-        insert_dynamic_html(self, "..\\_dist\\error_page.html", map);
+        let mut a = resources.get("/error_page.html").unwrap().to_string();
+
+        insert_dynamic_html(self, a, map);
     }
 
     pub fn make_sendable(&mut self) -> Vec<u8> {
@@ -122,9 +126,8 @@ impl Response {
     }
 }
 
-pub fn insert_dynamic_html(mut response: &mut Response, path: &str, templating_replacements: HashMap<&str, &str>) {
+pub fn insert_dynamic_html(mut response: &mut Response, mut resource: String, templating_replacements: HashMap<&str, &str>) {
     response.add_content_type("_.html".to_string());
-    let mut resource = fs::read_to_string(path).unwrap();
 
     for replacements in templating_replacements {
         resource = resource.replace(replacements.0, &replacements.1);

@@ -1,7 +1,8 @@
 use std::collections::HashMap;
 use std::fs::read_dir;
 use std::io::{Error as IoError, ErrorKind};
-use std::path::{Path};
+use std::path::{Path, PathBuf};
+use std::{env, fs};
 
 /// Get all files in a directory.
 ///
@@ -51,6 +52,21 @@ fn read_directory(path: &Path) -> Result<HashMap<String, Vec<u8>>, IoError> {
     Ok(result)
 }
 
+pub fn load_resources() -> Result<HashMap<String, String>, IoError> {
+    let current_dir = env::current_dir()?;
+    let resources_dir = PathBuf::from(current_dir.into_os_string().into_string().unwrap() + "/src/threaded/resources");
+    let mut result = HashMap::with_capacity(8);
+
+    for entry in fs::read_dir(&resources_dir)? {
+        let entry = entry?.path();
+        if entry.is_file() {
+            let file_name = format!("/{}", entry.strip_prefix(&resources_dir).unwrap().as_os_str().to_str().unwrap());
+            let file = fs::read_to_string(&entry)?;
+            result.insert(file_name, file);
+        }
+    }
+    Ok(result)
+}
 
 // todo finish loading of directory in memory and returning it
 pub fn load_directory(path: &Path) -> HashMap<String, Vec<u8>> {

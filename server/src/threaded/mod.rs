@@ -19,7 +19,7 @@ mod controller;
 
 /// Starts the server listening on the address,
 /// with the amount of threads provided by thread_pool_size.
-pub fn start_server(ip: String, port: i32, thread_pool_size: i32, dir: Arc<HashMap<String, Vec<u8>>>) {
+pub fn start_server(ip: String, port: i32, thread_pool_size: i32, dir: Arc<HashMap<String, Vec<u8>>>, resources: Arc<HashMap<String, String>>) {
     let pool = ThreadPool::new(thread_pool_size as usize);
 
     let address = format!("{}:{}", ip, port);
@@ -42,10 +42,11 @@ pub fn start_server(ip: String, port: i32, thread_pool_size: i32, dir: Arc<HashM
         };
 
         let dir = dir.clone();
+        let resources = resources.clone();
         let stats_change = stats.clone();
         let stats_view = stats.clone();
         pool.execute(move|| {
-            let result = stat_wrapper(handle_connection, connection, dir, stats_view);
+            let result = stat_wrapper(handle_connection, connection, dir, resources, stats_view);
             let mut results = stats_change.request_results.lock().unwrap();
             match result {
                 Some(res) => results.push(res),
@@ -55,10 +56,10 @@ pub fn start_server(ip: String, port: i32, thread_pool_size: i32, dir: Arc<HashM
     }
 }
 
-fn stat_wrapper(f: fn(TcpStream, Directory, Arc<ServerStats>) -> Option<(u32, String)>, stream: TcpStream, dir: Directory, stats: Arc<ServerStats>) -> Option<RequestResult> {
+fn stat_wrapper(f: fn(TcpStream, Directory, Arc<HashMap<String, String>>, Arc<ServerStats>) -> Option<(u32, String)>, stream: TcpStream, dir: Directory, resources: Arc<HashMap<String, String>>, stats: Arc<ServerStats>) -> Option<RequestResult> {
     let date = Utc::now().naive_local();
     let start = Instant::now();
-    let connection_result = f(stream, dir, stats);
+    let connection_result = f(stream, dir, resources, stats);
     let duration = start.elapsed().as_millis();
 
     match connection_result {
@@ -67,7 +68,7 @@ fn stat_wrapper(f: fn(TcpStream, Directory, Arc<ServerStats>) -> Option<(u32, St
     }
 }
 
-fn handle_connection(mut stream: TcpStream, dir: Directory, stats: Arc<ServerStats>) -> Option<(u32, String)> {
+fn handle_connection(mut stream: TcpStream, dir: Directory, resources: Arc<HashMap<String, String>>, stats: Arc<ServerStats>) -> Option<(u32, String)> {
     let mut buffer = [0; 2048];
 
     if let Err(_) = stream.read(&mut buffer) {
@@ -78,12 +79,12 @@ fn handle_connection(mut stream: TcpStream, dir: Directory, stats: Arc<ServerSta
     let request = match parse_request(buffer) {
         Ok(req) => req,
         Err(e) => {
-            send_response(stream, &mut error_response_400(e.description().to_string()));
+            send_response(stream, &mut error_response_400(e.description().to_string(), resources));
             return None
         }
     };
 
-    let mut response = handle_request(&request, dir, stats);
+    let mut response = handle_request(&request, dir, resources, stats);
 
     send_response(stream, &mut response);
     Some((response.response_identifiers.method.id, request.request_identifiers.path))

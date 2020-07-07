@@ -12,6 +12,7 @@ mod file;
 mod cli;
 
 use colored::Colorize;
+use crate::file::load_resources;
 
 type Directory = Arc<HashMap<String, Vec<u8>>>;
 
@@ -23,12 +24,12 @@ fn main() {
     println!("Serving directory: {}", dir.cyan());
 
     let dir = load_provided_directory(Path::new(&dir));
+    let resources = Arc::new(load_resources().unwrap());
 
     match &type_[..] {
         "threaded" => {
             println!("Server is a {} server\n Server is listening on {}:{}",
                      type_.cyan(), ip.to_string().cyan(), port.to_string().cyan());
-            threaded::start_server(ip, port, threads, dir)
         }
         "event_loop" => {
             println!("Server is a {} server\n Server is listening on {}:{}",
@@ -44,7 +45,7 @@ fn main() {
             let ip_t = ip.clone();
             let port_t = port + 1;
             let dir_t = dir.clone();
-            thread::spawn(move || threaded::start_server(ip_t, port_t, threads, dir_t));
+            thread::spawn(move || threaded::start_server(ip_t, port_t, threads, dir_t, resources));
 
             let ip_e = ip.clone();
             let port_e = port + 2;
@@ -68,4 +69,3 @@ fn main() {
 fn load_provided_directory(dir: &Path) -> Directory {
     Arc::new(file::load_directory(dir))
 }
-
