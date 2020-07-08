@@ -26,6 +26,7 @@ pub fn start_cli() -> (String, i32, String, i32, String) {
 }
 
 
+/// Creates the required CLI parser.
 fn create_matchers() -> ArgMatches<'static> {
     return App::new("Webserver")
         .version("0.1.0")
@@ -79,6 +80,7 @@ fn create_matchers() -> ArgMatches<'static> {
 }
 
 
+/// Validate the correctness of the user provided Port
 fn valid_port(string: String) -> Result<(), String> {
     match string.parse::<u32>() {
         Ok(num) if num > 1024 && num < 65536 => { Ok(()) }
@@ -86,6 +88,7 @@ fn valid_port(string: String) -> Result<(), String> {
     }
 }
 
+/// Validate the correctness of the user provided Portserver type
 fn valid_type(s: String) -> Result<(), String> {
     match &s[..] {
         "threaded" => {}
@@ -103,6 +106,7 @@ fn valid_type(s: String) -> Result<(), String> {
     return Ok(());
 }
 
+/// Validate the correctness of the user provided amount of threads
 fn valid_threads(string: String) -> Result<(), String> {
     match string.parse::<u32>() {
         Ok(num) if num >= 2 => { Ok(()) }
@@ -110,7 +114,7 @@ fn valid_threads(string: String) -> Result<(), String> {
     }
 }
 
-
+/// Validate the correctness of the user provided ip
 fn valid_ip(ip: String) -> Result<(), String> {
     let blocks = ip[..].split('.')
         .collect::<Vec<&str>>()
