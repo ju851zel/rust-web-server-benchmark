@@ -2,7 +2,6 @@ use std::ptr;
 use std::net::{TcpStream, TcpListener};
 use std::os::unix::io::AsRawFd;
 use std::io::{Read, Write};
-use futures::io::ErrorKind;
 use crate::response::Response;
 use crate::request::Request;
 use crate::Directory;

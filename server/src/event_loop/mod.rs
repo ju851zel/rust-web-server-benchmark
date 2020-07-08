@@ -4,7 +4,6 @@ use std::net::{TcpListener, TcpStream};
 use std::io::{Read, Write};
 use crate::response::Response;
 use crate::request::{Request, parse_request};
-use futures::io::{ErrorKind};
 use std::error::Error;
 
 type Files = Arc<HashMap<String, Vec<u8>>>;
