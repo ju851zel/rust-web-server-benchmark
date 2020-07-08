@@ -5,13 +5,14 @@ joerg
 - while server is running dont do any file operations, do them beofer the server starts
 - stats mehr uebersichltihckeit und vlt geastm anzahl erfolgreich und nciht erfolgreich etc.
 - unwraps ersetzen durch richtige fehlerbehandlung
+- deine stats methoden mit docs versehen
 
 julian
 - nonblocking resouce lag
     - unwraps ersetzen durch richtige fehlerbehandlung
     - funktioniert der penetrator wie er soll?
     - kann nonblocking nicht starten wenn kein BSD system
-- rust doc
+    - rust doc
     - readme mit beschriebung design
 - tests
 - selbstkritik in readme
