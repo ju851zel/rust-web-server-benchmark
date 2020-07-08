@@ -1,5 +1,8 @@
 extern crate clap;
 
+/// Module containing the CLI for the webservers
+
+
 use clap::{Arg, App, ArgMatches};
 
 /// Starts the CLI and returns:
