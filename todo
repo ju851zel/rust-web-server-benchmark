@@ -8,6 +8,12 @@ joerg
 
 julian
 - nonblocking resouce lag
-- unwraps ersetzen durch richtige fehlerbehandlung
-- funktioniert der penetrator wie er soll?
-- kann nonblocking nicht starten wenn kein BSD system
+    - unwraps ersetzen durch richtige fehlerbehandlung
+    - funktioniert der penetrator wie er soll?
+    - kann nonblocking nicht starten wenn kein BSD system
+- rust doc
+    - readme mit beschriebung design
+- tests
+- selbstkritik in readme
+
+

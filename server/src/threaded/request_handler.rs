@@ -6,6 +6,7 @@ use crate::threaded::controller::file_controller::file_response;
 use crate::threaded::server::ServerStats;
 use std::sync::Arc;
 
+/// Determine if the requested path equals a file in the provided directory or the stats endpoint
 pub fn handle_request(request: &Request, dir: Directory, stats: Arc<ServerStats>) -> Response {
 
     let path = &request.request_identifiers.path;

@@ -17,7 +17,7 @@ mod server;
 mod request_handler;
 mod controller;
 
-/// Starts the server listening on the address,
+/// Starts the threaded server listening on the address,
 /// with the amount of threads provided by thread_pool_size.
 pub fn start_server(ip: String, port: i32, thread_pool_size: i32, dir: Directory) {
     let pool = ThreadPool::new(thread_pool_size as usize);
@@ -66,7 +66,8 @@ fn stat_wrapper(f: fn(TcpStream, Directory, Arc<ServerStats>) -> Option<(u32, St
         None => None
     }
 }
-
+/// Handles a single connection.
+/// Checking the request of correctness and returning the requested file
 fn handle_connection(mut stream: TcpStream, dir: Directory, stats: Arc<ServerStats>) -> Option<(u32, String)> {
     let mut buffer = [0; 2048];
 
@@ -89,6 +90,7 @@ fn handle_connection(mut stream: TcpStream, dir: Directory, stats: Arc<ServerSta
     Some((response.response_identifiers.method.id, request.request_identifiers.path))
 }
 
+/// Send a response to the requester
 fn send_response(mut stream: TcpStream, response: &mut Response) {
     let worked = stream.write(&response.make_sendable());
     if let Err(err) =  worked {
