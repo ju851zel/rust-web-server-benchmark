@@ -3,7 +3,9 @@ extern crate clap;
 use clap::{Arg, App, ArgMatches};
 use reqwest::Url;
 
-/// Starts the CLI and returns:
+/// Starts the CLI.
+///
+/// returns:
 /// - the url the penetrator will send requests to
 /// - the number of requests to be sent
 pub fn start_cli() -> (String, usize) {
@@ -15,6 +17,7 @@ pub fn start_cli() -> (String, usize) {
     (url.to_string(), number_of_requests)
 }
 
+/// Creates the required CLI parser.
 fn create_matchers() -> ArgMatches<'static> {
     return App::new("Penetrator")
         .version("0.1.0")
@@ -38,6 +41,8 @@ fn create_matchers() -> ArgMatches<'static> {
         .get_matches();
 }
 
+
+/// Validate the correctness of the user provided URL
 fn valid_url(url: String) -> Result<(), String> {
     match Url::parse(&url) {
         Ok(_) => Ok(()),
@@ -45,6 +50,7 @@ fn valid_url(url: String) -> Result<(), String> {
     }
 }
 
+/// Validate the correctness of the user provided number of requests
 fn valid_num(num: String) -> Result<(), String> {
     match num.parse::<usize>() {
         Ok(_) => Ok(()),
