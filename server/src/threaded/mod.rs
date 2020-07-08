@@ -19,7 +19,7 @@ mod controller;
 
 /// Starts the server listening on the address,
 /// with the amount of threads provided by thread_pool_size.
-pub fn start_server(ip: String, port: i32, thread_pool_size: i32, dir: Arc<HashMap<String, Vec<u8>>>) {
+pub fn start_server(ip: String, port: i32, thread_pool_size: i32, dir: Directory) {
     let pool = ThreadPool::new(thread_pool_size as usize);
 
     let address = format!("{}:{}", ip, port);
@@ -75,7 +75,7 @@ fn handle_connection(mut stream: TcpStream, dir: Directory, stats: Arc<ServerSta
         return None
     }
 
-    let request = match parse_request(buffer) {
+    let request = match parse_request(buffer.to_vec()) {
         Ok(req) => req,
         Err(e) => {
             send_response(stream, &mut error_response_400(e.description().to_string()));

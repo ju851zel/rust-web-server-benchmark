@@ -44,8 +44,8 @@ impl error::Error for InvalidRequest {
     }
 }
 
-pub fn parse_request(buffer: [u8; 2048]) -> Result<Request> {
-    let raw_request = match String::from_utf8(buffer.to_vec()) {
+pub fn parse_request(buffer: Vec<u8>) -> Result<Request> {
+    let raw_request = match String::from_utf8(buffer) {
         Ok(string) => string,
         Err(_) => return Err(Box::new(Box::new(InvalidRequest{message: "Request could not be interpreted as string.".to_string()})))
     };

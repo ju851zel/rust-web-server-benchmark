@@ -4,9 +4,10 @@ use std::os::unix::io::AsRawFd;
 use std::io::{Read, Write};
 use crate::response::Response;
 use crate::request::Request;
-use crate::Directory;
+use crate::{Directory, Buffer};
 use crate::event_loop::unsafe_c::{Timespec, create_kqueue, put_kevent_in_kqueue, poll_kevents_from_q, create_k_read_event, create_k_write_event, KeventInternal};
 
+/// The Queue holding events and a reference to the kqueue
 pub struct Queue<T> where T: GeneralEvent {
     pub events: Vec<T>,
     pub wait_timeout: Timespec,
@@ -15,6 +16,7 @@ pub struct Queue<T> where T: GeneralEvent {
 }
 
 impl<T> Queue<T> where T: GeneralEvent {
+    /// Creates a new k queue
     pub fn new(dir: Directory) -> Result<Queue<T>, String> {
         Ok(Self {
             events: vec![],
@@ -24,6 +26,7 @@ impl<T> Queue<T> where T: GeneralEvent {
         })
     }
 
+    /// Adds a given element into the kqueue
     pub fn add(&mut self, event: T) -> Result<(), T> {
         self.events.push(event);
         let kevent = self.events.last().unwrap().get_kevent();
@@ -35,6 +38,7 @@ impl<T> Queue<T> where T: GeneralEvent {
         Ok(())
     }
 
+    /// Polls the q and retrieves the ready events
     pub fn poll(&mut self) -> Result<Vec<T>, String> {
         let finished_events = loop {
             let results = poll_kevents_from_q(self.fd, &self.wait_timeout)?;
@@ -62,39 +66,39 @@ impl<T> Queue<T> where T: GeneralEvent {
     }
 }
 
-//identified by ident,filter and udata
-// #[derive(Debug)]
+/// The Event containing the request data, stream object and the kevent
 pub struct Event {
     //todo change to request or sth like that
-    pub data: [u8; 2048],
+    pub data: Buffer,
     pub stream: TcpStream,
     // the internal C representation of the Event
     pub kevent: KeventInternal,
 }
 
+/// The Event containing the request data, connection object and the kevent
 pub struct ListenerEvent {
     //todo change to request or sth like that
-    pub data: [u8; 2048],
+    pub data: Buffer,
     pub listener: TcpListener,
     // the internal C representation of the Event
     pub kevent: KeventInternal,
 }
 
-
+/// Trait which defines general Event functions used in Event and ListenerEvent
 pub trait GeneralEvent {
     fn get_ident(&self) -> u64;
     fn get_kevent(&self) -> &KeventInternal;
 }
 
 impl Event {
-    pub(crate) fn new_read(stream: TcpStream, data: [u8; 2048]) -> Self {
+    pub(crate) fn new_read(stream: TcpStream, data: Buffer) -> Self {
         Self {
             data,
             kevent: create_k_read_event(stream.as_raw_fd() as u64),
             stream,
         }
     }
-    pub(crate) fn new_write(stream: TcpStream, data: [u8; 2048]) -> Self {
+    pub(crate) fn new_write(stream: TcpStream, data: Buffer) -> Self {
         Self {
             data,
             kevent: create_k_write_event(stream.as_raw_fd() as u64),
@@ -107,7 +111,6 @@ impl GeneralEvent for Event {
     fn get_ident(&self) -> u64 {
         self.kevent.ident
     }
-
     fn get_kevent(&self) -> &KeventInternal {
         &self.kevent
     }
@@ -123,8 +126,9 @@ impl GeneralEvent for ListenerEvent {
     }
 }
 
+
 impl ListenerEvent {
-    pub(crate) fn new(listener: TcpListener, data: [u8; 2048]) -> Self {
+    pub(crate) fn new(listener: TcpListener, data: Buffer) -> Self {
         Self {
             data,
             kevent: create_k_read_event(listener.as_raw_fd() as u64),

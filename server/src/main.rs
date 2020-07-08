@@ -13,7 +13,11 @@ mod cli;
 
 use colored::Colorize;
 
+/// Wrapper for The user provided directory
 type Directory = Arc<HashMap<String, Vec<u8>>>;
+/// Wrapper for the fixed length byte buffer
+type Buffer = [u8; 2048];
+
 
 fn main() {
     println!("Starting the webserver!");

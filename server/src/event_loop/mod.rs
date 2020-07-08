@@ -7,9 +7,7 @@ use std::net::{TcpListener, TcpStream};
 use std::error::Error;
 use core::ptr;
 use std::io::{Read, ErrorKind, Write};
-
-type Files = Arc<HashMap<String, Vec<u8>>>;
-type Buffer = [u8; 2048];
+use crate::{Directory, Buffer};
 
 mod ffi;
 mod unsafe_c;
@@ -24,7 +22,7 @@ mod unsafe_c;
 /// It is always actively looking for work, but when work arrives, but would block,
 /// it continues on other work.
 /// In a future update it will even wait passively, if no work is available.
-pub fn start_server(ip: String, port: i32, dir: Files) {
+pub fn start_server(ip: String, port: i32, dir: Directory) {
     let address = format!("{}:{}", ip, port);
 
     let (mut incoming_q, mut reading_q, mut writing_q) = match create_qs(dir) {
@@ -69,7 +67,7 @@ pub fn start_server(ip: String, port: i32, dir: Files) {
 ///
 /// Creates the incoming, writing and reading queues.
 /// When an error occurs, the server shuts down.
-fn create_qs(dir: Files) -> Result<(Queue<ListenerEvent>, Queue<Event>, Queue<Event>), String> {
+fn create_qs(dir: Directory) -> Result<(Queue<ListenerEvent>, Queue<Event>, Queue<Event>), String> {
     let mut incoming_q = Queue::new(dir.clone())?;
     let mut reading_q = Queue::new(dir.clone())?;
     let mut writing_q = Queue::new(dir)?;
@@ -157,7 +155,7 @@ fn handle_incoming(incoming_q: &mut Queue<ListenerEvent>, reading_q: &mut Queue<
 
 
 /// Converts a byte slice into a fixed length portion
-fn from_slice(bytes: &[u8]) -> [u8; 2048] {
+fn from_slice(bytes: &[u8]) -> Buffer {
     let vec: Vec<u8> = bytes.to_vec();
     let mut result = [0; 2048];
     if bytes.len() > 2048 { println!("todo to small buffer"); }
@@ -172,10 +170,10 @@ fn from_slice(bytes: &[u8]) -> [u8; 2048] {
 
 
 /// Creates a response according to the requested ressource
-fn create_response(buffer: Buffer, files: Files) -> Vec<u8> {
+fn create_response(buffer: Buffer, files: Directory) -> Vec<u8> {
     let mut response = Response::default_ok();
 
-    let request = parse_request(buffer);
+    let request = parse_request(buffer.to_vec());
     let request = match request {
         Ok(request) => request,
         Err(error) => {
