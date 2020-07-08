@@ -129,12 +129,6 @@ pub struct Timespec {
 
 
 impl Timespec {
-    pub fn of(msec: i32) -> Self {
-        Timespec {
-            tv_sec: (msec / 1000) as isize,
-            v_nsec: ((msec % 1000) * 1000000) as usize,
-        }
-    }
     pub fn zero() -> Self {
         Timespec {
             tv_sec: 0 as isize,

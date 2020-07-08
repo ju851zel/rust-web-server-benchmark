@@ -12,17 +12,31 @@ mod file;
 mod cli;
 
 use colored::Colorize;
+use std::collections::hash_map::RandomState;
 
+/// Wrapper for The user provided directory
 type Directory = Arc<HashMap<String, Vec<u8>>>;
+/// Wrapper for the fixed length byte buffer
+type Buffer = [u8; 2048];
 
+
+/// Starts all the webservers depending on the users input
 fn main() {
-    println!("Starting the webserver!");
 
     let (ip, port, dir, threads, type_) = cli::start_cli();
 
     println!("Serving directory: {}", dir.cyan());
 
-    let dir = load_provided_directory(Path::new(&dir));
+    let dir = match file::load_directory(Path::new(&dir)) {
+        Ok(dir) => Arc::new(dir),
+        Err(error) => {
+            println!("{}",error);
+            return;
+        }
+    };
+    println!("Successfully read dir in memory: {:#?}", list.keys());
+
+    println!("Starting the webserver/s!");
 
     match &type_[..] {
         "threaded" => {
@@ -64,8 +78,3 @@ fn main() {
         }
     };
 }
-
-fn load_provided_directory(dir: &Path) -> Directory {
-    Arc::new(file::load_directory(dir))
-}
-

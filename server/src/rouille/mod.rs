@@ -1,8 +1,9 @@
 use rouille::{Response, ResponseBody};
 use std::collections::HashMap;
 use std::sync::Arc;
+use crate::Directory;
 
-pub fn start_server(ip: String, port: i32, dir: Arc<HashMap<String, Vec<u8>>>) {
+pub fn start_server(ip: String, port: i32, dir: Directory) {
     let address = format!("{}:{}", ip, port);
 
     rouille::start_server(address, move |request| {

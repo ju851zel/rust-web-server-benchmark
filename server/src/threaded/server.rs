@@ -3,17 +3,20 @@ use std::thread;
 use chrono::{Date, Utc, NaiveDateTime};
 
 
+/// The threadpool struct that manages the threads
 #[derive(Debug)]
 pub struct ThreadPool {
     workers: Vec<Worker>,
     transmitter: Sender<Job>,
 }
 
+/// The struct that manages Stats for the server
 #[derive(Debug)]
 pub struct ServerStats {
     pub request_results: Mutex<Vec<RequestResult>>
 }
 
+/// The struct that manages a single stat about a specific request
 #[derive(Debug)]
 pub struct RequestResult {
     pub response_code: u32,
@@ -44,6 +47,7 @@ impl ThreadPool {
     }
 }
 
+/// The worker thread
 #[derive(Debug)]
 struct Worker {
     id: usize,
@@ -52,6 +56,7 @@ struct Worker {
 
 
 impl Worker {
+    /// Creates a new worker thread
     fn new(id: usize, receiver: Arc<Mutex<Receiver<Job>>>) -> Self {
         Worker {
             id,
@@ -63,7 +68,7 @@ impl Worker {
     }
 }
 
-
+/// A trait that makes the storing of the function that should be run when the thread runs possible
 trait FnBox {
     fn call_box(self: Box<Self>);
 }
