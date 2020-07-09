@@ -19,20 +19,8 @@ julian
 
 
 Ablauf video
+siehe script
 
-1. projekt vorstellen S
-1.1 performanter server Z
-1.2. penetrator bauen um masstaab zu haben S
-1.3 andere server arten wie rouille / ein thread pro request Z
-1.4 non blockin  Z
-1.4.1 unsafe rust Z
-1.4.1.1 nachteile unsafe rust Z
-nur bsd weil xxx Z
-1.5 live penetrator zeigen S
-zu 1. warum projekt S
-1.6 was es zu verbessern gaebe Z, S
-1.7 was war gut / wo waren probleme S Z
-1.4,5 stats S
 DU morgen/Freitag deine teile im code
 und meinen PR
 beide bis freitag  abend ihren text ueberlegen
