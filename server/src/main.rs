@@ -12,7 +12,6 @@ mod file;
 mod cli;
 
 use colored::Colorize;
-use std::collections::hash_map::RandomState;
 
 /// Wrapper for The user provided directory
 type Directory = Arc<HashMap<String, Vec<u8>>>;
@@ -34,7 +33,7 @@ fn main() {
             return;
         }
     };
-    println!("Successfully read dir in memory: {:#?}", list.keys());
+    println!("Successfully read dir in memory: {:#?}", dir.keys());
 
     println!("Starting the webserver/s!");
 
@@ -52,7 +51,7 @@ fn main() {
         "rouille" => {
             println!("Server is a {} server\n Server is listening on {}:{}",
                      type_.cyan(), ip.to_string().cyan(), port.to_string().cyan());
-            rouille::start_server(ip, port, dir)
+            rouille::start_server(ip, port, dir);//todo
         }
         _ => {
             let ip_t = ip.clone();

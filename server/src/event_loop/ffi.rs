@@ -1,9 +1,5 @@
-use std::ptr;
 use std::net::{TcpStream, TcpListener};
 use std::os::unix::io::AsRawFd;
-use std::io::{Read, Write};
-use crate::response::Response;
-use crate::request::Request;
 use crate::{Directory, Buffer};
 use crate::event_loop::unsafe_c::{Timespec, create_kqueue, put_kevent_in_kqueue, poll_kevents_from_q, create_k_read_event, create_k_write_event, KeventInternal};
 

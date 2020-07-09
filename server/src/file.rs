@@ -58,7 +58,7 @@ fn read_directory_rec(path: &Path) -> Result<HashMap<String, Vec<u8>>, IoError> 
 /// Loads the files in the path from the filesystem into memory
 pub fn load_directory(path: &Path) -> Result<HashMap<String, Vec<u8>>,String> {
     return match get_all_files_in_dir(path) {
-        Err(err) => Err("Could not read files in directory.".to_string()),
+        Err(_) => Err("Could not read files in directory.".to_string()),
         Ok(list) => Ok(list)
     }
 }

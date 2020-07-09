@@ -1,6 +1,6 @@
 use std::sync::{mpsc::Sender, mpsc::channel, mpsc::Receiver, Arc, Mutex};
 use std::thread;
-use chrono::{Date, Utc, NaiveDateTime};
+use chrono::{NaiveDateTime};
 
 
 /// The threadpool struct that manages the threads
@@ -22,12 +22,11 @@ pub struct RequestResult {
     pub response_code: u32,
     pub requested_resource: String,
     pub time: NaiveDateTime,
-    pub response_time: u128
+    pub response_time: u128,
 }
 
 impl ThreadPool {
     pub fn new(size: usize) -> ThreadPool {
-
         let (tx, rx) = channel();
 
         let receiver = Arc::new(Mutex::new(rx));

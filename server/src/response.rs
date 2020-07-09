@@ -2,6 +2,10 @@ use std::collections::HashMap;
 use std::path::Path;
 use std::ffi::OsStr;
 use std::fs;
+use crate::{Buffer, Directory};
+use crate::request::parse_request;
+use std::net::TcpStream;
+use std::io::Write;
 
 /// The object used in all the servers, to represent the http response.
 #[derive(Debug)]
@@ -142,6 +146,33 @@ impl Response {
     }
 }
 
+
+/// Creates a response according to the requested ressource
+pub fn create_response(buffer: Buffer, files: Directory) -> Vec<u8> {
+    let mut response = Response::default_ok();
+
+    let request = parse_request(buffer.to_vec());
+    let request = match request {
+        Ok(request) => request,
+        Err(error) => {
+            println!("{}", error.description().to_string());
+            return Response::default_bad_request().make_sendable();
+        }
+    };
+
+    let req_file = request.request_identifiers.path;
+    let file = match files.get(&req_file) {
+        Some(file) => file,
+        None => {
+            println!("Requested source could not be found");
+            return Response::default_not_found().make_sendable();
+        }
+    };
+    response.add_content_type(req_file);
+    response.body = file.clone();
+    response.make_sendable()
+}
+
 // todo comment what does it do after reimplementing the fs::read_string into correct
 pub fn insert_dynamic_html(mut response: &mut Response, path: &str, templating_replacements: HashMap<&str, &str>) {
     response.add_content_type("_.html".to_string());
@@ -154,6 +185,14 @@ pub fn insert_dynamic_html(mut response: &mut Response, path: &str, templating_r
     response.body = resource.as_bytes().to_vec();
 }
 
+/// Send a response to the requester
+pub fn send_response(mut stream: TcpStream, response: &mut Response) {
+    let worked = stream.write(&response.make_sendable());
+    if let Err(err) =  worked {
+        println!("Error while sending response: {}",err)
+    }
+    stream.flush().unwrap();
+}
 
 #[cfg(test)]
 mod response_identifiers_test {

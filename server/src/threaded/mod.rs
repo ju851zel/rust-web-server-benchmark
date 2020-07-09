@@ -1,9 +1,8 @@
-use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use std::net::{TcpListener, TcpStream};
 use server::ThreadPool;
-use std::io::{Read, Write};
-use crate::response::Response;
+use std::io::{Read};
+use crate::response::{send_response};
 use crate::Directory;
 use crate::threaded::server::{ServerStats, RequestResult};
 use std::time::Instant;
@@ -11,7 +10,6 @@ use chrono::Utc;
 use crate::request::parse_request;
 use crate::threaded::request_handler::handle_request;
 use crate::threaded::controller::error_controller::error_response_400;
-use std::error::Error;
 
 mod server;
 mod request_handler;
@@ -66,6 +64,7 @@ fn stat_wrapper(f: fn(TcpStream, Directory, Arc<ServerStats>) -> Option<(u32, St
         None => None
     }
 }
+
 /// Handles a single connection.
 /// Checking the request of correctness and returning the requested file
 fn handle_connection(mut stream: TcpStream, dir: Directory, stats: Arc<ServerStats>) -> Option<(u32, String)> {
@@ -90,11 +89,3 @@ fn handle_connection(mut stream: TcpStream, dir: Directory, stats: Arc<ServerSta
     Some((response.response_identifiers.method.id, request.request_identifiers.path))
 }
 
-/// Send a response to the requester
-fn send_response(mut stream: TcpStream, response: &mut Response) {
-    let worked = stream.write(&response.make_sendable());
-    if let Err(err) =  worked {
-         println!("Error while sending response: {}",err)
-    }
-    stream.flush().unwrap();
-}
