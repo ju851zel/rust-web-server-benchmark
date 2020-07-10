@@ -10,7 +10,7 @@ use std::{env, fs};
 /// More specific return a hashmap containing the filename as key and the file content as utf-8 value
 pub fn get_all_files_in_dir(path: &Path) -> Result<HashMap<String, Vec<u8>>, IoError> {
     if path.is_dir() {
-        read_directory(path)
+        read_directory_rec(path)
     } else {
         let mut result = HashMap::with_capacity(1);
         let file = read_file(path)?;
@@ -19,12 +19,14 @@ pub fn get_all_files_in_dir(path: &Path) -> Result<HashMap<String, Vec<u8>>, IoE
     }
 }
 
+/// Reads a specific file from the path into Memory
 fn read_file(file: &Path) -> Result<(String, Vec<u8>), IoError> {
     let filename = file_or_dir_name(file)?;
     let file_content = std::fs::read(file)?;
     Ok((filename, file_content))
 }
 
+/// Determines wheter the file is a file or directory
 fn file_or_dir_name(file: &Path) -> Result<String, IoError> {
     Ok(file
         .file_name()
@@ -34,7 +36,8 @@ fn file_or_dir_name(file: &Path) -> Result<String, IoError> {
         .to_string())
 }
 
-fn read_directory(path: &Path) -> Result<HashMap<String, Vec<u8>>, IoError> {
+/// Reads a specific file recursively from the path into Memory
+fn read_directory_rec(path: &Path) -> Result<HashMap<String, Vec<u8>>, IoError> {
     let mut result = HashMap::with_capacity(8);
 
     for entry in read_dir(path)? {
@@ -43,7 +46,7 @@ fn read_directory(path: &Path) -> Result<HashMap<String, Vec<u8>>, IoError> {
             let file = read_file(&file)?;
             result.insert(format!("/{}", file.0), file.1);
         } else {
-            let map = read_directory(&file)?;
+            let map = read_directory_rec(&file)?;
             for f in map {
                 result.insert(format!("/{}{}", file_or_dir_name(&file)?, f.0), f.1);
             }
@@ -55,12 +58,12 @@ fn read_directory(path: &Path) -> Result<HashMap<String, Vec<u8>>, IoError> {
 pub fn load_static_resources() -> Result<HashMap<String, Vec<u8>>, IoError> {
     let current_dir = env::current_dir()?;
 
-    read_directory(&PathBuf::from(current_dir.into_os_string().into_string().unwrap()  + "/src/threaded/resources"))
+    read_directory(&PathBuf::from(current_dir.into_os_string().into_string().unwrap()  + "/src/threaded/resources/static"))
 }
 
 pub fn load_dynamic_resources() -> Result<HashMap<String, String>, IoError> {
     let current_dir = env::current_dir()?;
-    let resources_dir = PathBuf::from(current_dir.into_os_string().into_string().unwrap() + "/src/threaded/resources");
+    let resources_dir = PathBuf::from(current_dir.into_os_string().into_string().unwrap() + "/src/threaded/resources/templates");
     let mut result = HashMap::with_capacity(8);
 
     for entry in fs::read_dir(&resources_dir)? {
@@ -74,17 +77,11 @@ pub fn load_dynamic_resources() -> Result<HashMap<String, String>, IoError> {
     Ok(result)
 }
 
-// todo finish loading of directory in memory and returning it
-pub fn load_directory(path: &Path) -> HashMap<String, Vec<u8>> {
-    match get_all_files_in_dir(path) {
-        Err(err) => {
-            println!("Error getting files in dir: {:?}", err);
-            panic!(); //todo
-        }
-        Ok(list) => {
-            println!("Successfully read dir in memory: {:#?}", list.keys());
-            return list;
-        }
+/// Loads the files in the path from the filesystem into memory
+pub fn load_directory(path: &Path) -> Result<HashMap<String, Vec<u8>>,String> {
+    return match get_all_files_in_dir(path) {
+        Err(_) => Err("Could not read files in directory.".to_string()),
+        Ok(list) => Ok(list)
     }
 }
 

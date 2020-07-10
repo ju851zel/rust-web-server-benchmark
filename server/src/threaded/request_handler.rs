@@ -7,8 +7,8 @@ use crate::threaded::server::ServerStats;
 use std::sync::Arc;
 use std::collections::HashMap;
 
+/// Mapping endpoints to the corresponding controller actions
 pub fn handle_request(request: &Request, dir: StaticFiles, resources: Arc<HashMap<String, String>>, stats: Arc<ServerStats>) -> Response {
-
     let path = &request.request_identifiers.path;
 
     let response = match &path[..] {

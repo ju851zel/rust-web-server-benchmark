@@ -1,5 +1,8 @@
 extern crate clap;
 
+/// Module containing the CLI for the webservers
+
+
 use clap::{Arg, App, ArgMatches};
 
 /// Starts the CLI and returns:
@@ -23,6 +26,7 @@ pub fn start_cli() -> (String, i32, String, i32, String) {
 }
 
 
+/// Creates the required CLI parser.
 fn create_matchers() -> ArgMatches<'static> {
     return App::new("Webserver")
         .version("0.1.0")
@@ -70,12 +74,13 @@ fn create_matchers() -> ArgMatches<'static> {
             .default_value("all")
             .validator(|value| valid_type(value))
             .value_name("TYPE")
-            .help("The type of the server [threaded|event_loop|rouille|all]")
+            .help("The type of the server [threaded|event_loop|rouille|all]. Event loop is only supported on BSD systems, and eventually linux.")
             .takes_value(true))
         .get_matches();
 }
 
 
+/// Validate the correctness of the user provided Port
 fn valid_port(string: String) -> Result<(), String> {
     match string.parse::<u32>() {
         Ok(num) if num > 1024 && num < 65536 => { Ok(()) }
@@ -83,14 +88,25 @@ fn valid_port(string: String) -> Result<(), String> {
     }
 }
 
+/// Validate the correctness of the user provided Portserver type
 fn valid_type(s: String) -> Result<(), String> {
-    if s == "threaded" || s == "event_loop" || s == "rouille" || s == "all" {
-        Ok(())
-    } else {
-        Err("Please select a server type [threaded|event_loop|rouille]".to_string())
+    match &s[..] {
+        "threaded" => {}
+        "rouille" => {}
+        "event_loop" | "all" => {
+            match std::env::consts::OS {
+                "macos" => {}
+                "freebsd" => {}
+                "linux" => {}
+                _ => return Err("Event loop is only supported on BSD systems, and eventually linux.".to_string())
+            }
+        }
+        _ => return Err("Please select a server type [threaded|event_loop|rouille]".to_string())
     }
+    return Ok(());
 }
 
+/// Validate the correctness of the user provided amount of threads
 fn valid_threads(string: String) -> Result<(), String> {
     match string.parse::<u32>() {
         Ok(num) if num >= 2 => { Ok(()) }
@@ -98,7 +114,7 @@ fn valid_threads(string: String) -> Result<(), String> {
     }
 }
 
-
+/// Validate the correctness of the user provided ip
 fn valid_ip(ip: String) -> Result<(), String> {
     let blocks = ip[..].split('.')
         .collect::<Vec<&str>>()

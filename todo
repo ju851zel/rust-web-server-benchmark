@@ -1,0 +1,30 @@
+- video
+
+joerg
+- error page in resource independent from dist dir.
+- while server is running dont do any file operations, do them beofer the server starts
+- stats mehr uebersichltihckeit und vlt geastm anzahl erfolgreich und nciht erfolgreich etc.
+- unwraps ersetzen durch richtige fehlerbehandlung
+- deine stats methoden mit docs versehen
+
+julian
+- nonblocking resouce lag
+    - unwraps ersetzen durch richtige fehlerbehandlung
+    - funktioniert der penetrator wie er soll?
+    - kann nonblocking nicht starten wenn kein BSD system
+    - rust doc
+    - readme mit beschriebung design
+- tests
+- selbstkritik in readme
+
+
+Ablauf video
+siehe script
+
+DU morgen/Freitag deine teile im code
+und meinen PR
+beide bis freitag  abend ihren text ueberlegen
+am freitab abend jeder dem anderen den text schicken
+samstag/sonntag absprechen bygl der aufnahme
+nimmt jeder sein video auf. und am montag shcniede ich alles zusammen,
+dienstag puffer falls was schief geht

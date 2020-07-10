@@ -2,19 +2,23 @@ use std::sync::{mpsc::Sender, mpsc::channel, mpsc::Receiver, Arc, Mutex};
 use std::thread;
 use chrono::{Date, Utc, NaiveDateTime};
 use std::collections::HashMap;
+use crate::{StaticFiles, DynamicFiles};
 
 
+/// The threadpool struct that manages the threads
 #[derive(Debug)]
 pub struct ThreadPool {
     workers: Vec<Worker>,
     transmitter: Sender<Job>,
 }
 
+/// The struct that manages Stats for the server
 #[derive(Debug)]
 pub struct ServerStats {
     pub request_results: Mutex<Vec<RequestResult>>
 }
 
+/// The struct that manages a single stat about a specific request
 #[derive(Debug)]
 pub struct RequestResult {
     pub response_code: u32,
@@ -30,13 +34,12 @@ impl RequestResult {
 }
 
 pub struct ServerFiles {
-    pub static_files: HashMap<String, Vec<u8>>,
-    pub dynamic_files: HashMap<String, String>
+    pub static_files: StaticFiles,
+    pub dynamic_files: DynamicFiles
 }
 
 impl ThreadPool {
     pub fn new(size: usize) -> ThreadPool {
-
         let (tx, rx) = channel();
 
         let receiver = Arc::new(Mutex::new(rx));
@@ -56,6 +59,7 @@ impl ThreadPool {
     }
 }
 
+/// The worker thread
 #[derive(Debug)]
 struct Worker {
     id: usize,
@@ -64,6 +68,7 @@ struct Worker {
 
 
 impl Worker {
+    /// Creates a new worker thread
     fn new(id: usize, receiver: Arc<Mutex<Receiver<Job>>>) -> Self {
         Worker {
             id,
@@ -75,7 +80,7 @@ impl Worker {
     }
 }
 
-
+/// A trait that makes the storing of the function that should be run when the thread runs possible
 trait FnBox {
     fn call_box(self: Box<Self>);
 }

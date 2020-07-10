@@ -4,6 +4,7 @@ use core::fmt;
 
 type Result<T> = std::result::Result<T, Box<dyn error::Error>>;
 
+/// The object used in all the servers, to represent the http request.
 #[derive(Debug)]
 pub struct Request {
     pub request_identifiers: RequestIdentifiers,
@@ -11,6 +12,9 @@ pub struct Request {
     pub body: String,
 }
 
+/// The identifier for the request, containing http method, version and path
+///
+/// E.g. GET, Http1.1, /example.html
 #[derive(Debug)]
 #[derive(Eq, PartialEq)]
 pub struct RequestIdentifiers {
@@ -19,12 +23,14 @@ pub struct RequestIdentifiers {
     pub version: String,
 }
 
+/// The http request type
+///
+///E.g. GET
 #[derive(Debug)]
 #[derive(Eq, PartialEq)]
 pub enum RequestType {
     Get,
     Post,
-    //todo add more cases
 }
 
 #[derive(Debug)]
@@ -33,19 +39,22 @@ struct InvalidRequest {
 }
 
 impl fmt::Display for InvalidRequest {
+    /// formatting the Invalid request.
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "Could not parse request.{}", self.message)
     }
 }
 
 impl error::Error for InvalidRequest {
+    /// setting the error message.
     fn description(&self) -> &str {
         &self.message
     }
 }
 
-pub fn parse_request(buffer: [u8; 2048]) -> Result<Request> {
-    let raw_request = match String::from_utf8(buffer.to_vec()) {
+/// Parses the byte Vector stream into Request object.
+pub fn parse_request(buffer: Vec<u8>) -> Result<Request> {
+    let raw_request = match String::from_utf8(buffer) {
         Ok(string) => string,
         Err(_) => return Err(Box::new(Box::new(InvalidRequest{message: "Request could not be interpreted as string.".to_string()})))
     };
@@ -53,6 +62,7 @@ pub fn parse_request(buffer: [u8; 2048]) -> Result<Request> {
     read_request(&raw_request)
 }
 
+/// Reads the contents from the byte Vector into the Request object.
 fn read_request(buffer: &str) -> Result<Request> {
     let lines: Vec<&str> = buffer.split("\r\n").collect();
     let request_identifiers = get_request_identifiers(&lines)?;
@@ -65,6 +75,7 @@ fn read_request(buffer: &str) -> Result<Request> {
     })
 }
 
+/// Reads the request identifier from the http request
 fn get_request_identifiers(lines: &Vec<&str>) -> Result<RequestIdentifiers> {
     let first_line_content: Vec<&str> = lines
         .get(0).ok_or(InvalidRequest{message: "First line does not confirm HTTP protocol.".to_string()})?
@@ -93,6 +104,7 @@ fn get_request_identifiers(lines: &Vec<&str>) -> Result<RequestIdentifiers> {
     })
 }
 
+/// Reads the header from the http request
 fn get_headers(lines: &Vec<&str>) -> Result<HashMap<String, String>> {
     Ok(lines.into_iter()
         .skip(1)

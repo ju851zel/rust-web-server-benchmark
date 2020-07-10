@@ -1,25 +1,23 @@
-use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use std::net::{TcpListener, TcpStream};
 use server::ThreadPool;
 use std::io::{Read, Write};
-use crate::response::Response;
-use crate::StaticFiles;
+use crate::response::{Response, send_response};
+use crate::{StaticFiles, DynamicFiles};
 use crate::threaded::server::{ServerStats, RequestResult};
 use std::time::Instant;
 use chrono::Utc;
 use crate::request::parse_request;
 use crate::threaded::request_handler::handle_request;
 use crate::threaded::controller::error_controller::error_response_400;
-use std::error::Error;
 
 mod server;
 mod request_handler;
 mod controller;
 
-/// Starts the server listening on the address,
+/// Starts the threaded server listening on the address,
 /// with the amount of threads provided by thread_pool_size.
-pub fn start_server(ip: String, port: i32, thread_pool_size: i32, dir: Arc<HashMap<String, Vec<u8>>>, resources: Arc<HashMap<String, String>>) {
+pub fn start_server(ip: String, port: i32, thread_pool_size: i32, dir: StaticFiles, resources: DynamicFiles) {
     let pool = ThreadPool::new(thread_pool_size as usize);
 
     let address = format!("{}:{}", ip, port);
@@ -56,7 +54,7 @@ pub fn start_server(ip: String, port: i32, thread_pool_size: i32, dir: Arc<HashM
     }
 }
 
-fn stat_wrapper(f: fn(TcpStream, StaticFiles, Arc<HashMap<String, String>>, Arc<ServerStats>) -> Option<(u32, String)>, stream: TcpStream, dir: StaticFiles, resources: Arc<HashMap<String, String>>, stats: Arc<ServerStats>) -> Option<RequestResult> {
+fn stat_wrapper(f: fn(TcpStream, StaticFiles, DynamicFiles, Arc<ServerStats>) -> Option<(u32, String)>, stream: TcpStream, dir: StaticFiles, resources: DynamicFiles, stats: Arc<ServerStats>) -> Option<RequestResult> {
     let date = Utc::now().naive_local();
     let start = Instant::now();
     let connection_result = f(stream, dir, resources, stats);
@@ -68,7 +66,9 @@ fn stat_wrapper(f: fn(TcpStream, StaticFiles, Arc<HashMap<String, String>>, Arc<
     }
 }
 
-fn handle_connection(mut stream: TcpStream, dir: StaticFiles, resources: Arc<HashMap<String, String>>, stats: Arc<ServerStats>) -> Option<(u32, String)> {
+/// Handles a single connection.
+/// Checking the request of correctness and returning the requested file
+fn handle_connection(mut stream: TcpStream, dir: StaticFiles, resources: DynamicFiles, stats: Arc<ServerStats>) -> Option<(u32, String)> {
     let mut buffer = [0; 2048];
 
     if let Err(_) = stream.read(&mut buffer) {
@@ -76,7 +76,7 @@ fn handle_connection(mut stream: TcpStream, dir: StaticFiles, resources: Arc<Has
         return None
     }
 
-    let request = match parse_request(buffer) {
+    let request = match parse_request(buffer.to_vec()) {
         Ok(req) => req,
         Err(e) => {
             send_response(stream, &mut error_response_400(e.description().to_string(), resources));
@@ -88,12 +88,4 @@ fn handle_connection(mut stream: TcpStream, dir: StaticFiles, resources: Arc<Has
 
     send_response(stream, &mut response);
     Some((response.response_identifiers.method.id, request.request_identifiers.path))
-}
-
-fn send_response(mut stream: TcpStream, response: &mut Response) {
-    let worked = stream.write(&response.make_sendable());
-    if let Err(err) =  worked {
-         println!("Error while sending response: {}",err)
-    }
-    stream.flush().unwrap();
 }
