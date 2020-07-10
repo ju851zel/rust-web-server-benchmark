@@ -1,5 +1,5 @@
 use crate::response::Response;
-use crate::Directory;
+use crate::StaticFiles;
 use std::collections::HashMap;
 use std::sync::Arc;
 

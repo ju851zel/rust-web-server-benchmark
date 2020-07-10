@@ -12,9 +12,10 @@ mod file;
 mod cli;
 
 use colored::Colorize;
-use crate::file::load_resources;
+use crate::file::load_dynamic_resources;
 
-type Directory = Arc<HashMap<String, Vec<u8>>>;
+type StaticFiles = Arc<HashMap<String, Vec<u8>>>;
+type DynamicFiles = Arc<HashMap<String, String>>;
 
 fn main() {
     println!("Starting the webserver!");
@@ -24,18 +25,22 @@ fn main() {
     println!("Serving directory: {}", dir.cyan());
 
     let dir = load_provided_directory(Path::new(&dir));
-    let resources = Arc::new(load_resources().unwrap());
+    let resources = Arc::new(load_dynamic_resources().unwrap());
+
+    //let a = ServerFiles {  }
+
+
 
     match &type_[..] {
         "threaded" => {
             println!("Server is a {} server\n Server is listening on {}:{}",
                      type_.cyan(), ip.to_string().cyan(), port.to_string().cyan());
         }
-        "event_loop" => {
-            println!("Server is a {} server\n Server is listening on {}:{}",
-                     type_.cyan(), ip.to_string().cyan(), port.to_string().cyan());
-            event_loop::start_server(ip, port, dir)
-        }
+        // "event_loop" => {
+        //     println!("Server is a {} server\n Server is listening on {}:{}",
+        //              type_.cyan(), ip.to_string().cyan(), port.to_string().cyan());
+        //     event_loop::start_server(ip, port, dir)
+        // }
         "rouille" => {
             println!("Server is a {} server\n Server is listening on {}:{}",
                      type_.cyan(), ip.to_string().cyan(), port.to_string().cyan());
@@ -50,7 +55,7 @@ fn main() {
             let ip_e = ip.clone();
             let port_e = port + 2;
             let dir_e = dir.clone();
-            thread::spawn(move || event_loop::start_server(ip_e, port_e, dir_e));
+            // thread::spawn(move || event_loop::start_server(ip_e, port_e, dir_e));
 
             println!("Starting all servers\n\
                       Threaded server is listening on {ip}:{port_t}\n\
@@ -66,6 +71,6 @@ fn main() {
     };
 }
 
-fn load_provided_directory(dir: &Path) -> Directory {
+fn load_provided_directory(dir: &Path) -> StaticFiles {
     Arc::new(file::load_directory(dir))
 }

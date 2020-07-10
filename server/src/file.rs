@@ -52,7 +52,13 @@ fn read_directory(path: &Path) -> Result<HashMap<String, Vec<u8>>, IoError> {
     Ok(result)
 }
 
-pub fn load_resources() -> Result<HashMap<String, String>, IoError> {
+pub fn load_static_resources() -> Result<HashMap<String, Vec<u8>>, IoError> {
+    let current_dir = env::current_dir()?;
+
+    read_directory(&PathBuf::from(current_dir.into_os_string().into_string().unwrap()  + "/src/threaded/resources"))
+}
+
+pub fn load_dynamic_resources() -> Result<HashMap<String, String>, IoError> {
     let current_dir = env::current_dir()?;
     let resources_dir = PathBuf::from(current_dir.into_os_string().into_string().unwrap() + "/src/threaded/resources");
     let mut result = HashMap::with_capacity(8);

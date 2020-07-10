@@ -4,7 +4,7 @@ use std::net::{TcpListener, TcpStream};
 use server::ThreadPool;
 use std::io::{Read, Write};
 use crate::response::Response;
-use crate::Directory;
+use crate::StaticFiles;
 use crate::threaded::server::{ServerStats, RequestResult};
 use std::time::Instant;
 use chrono::Utc;
@@ -56,19 +56,19 @@ pub fn start_server(ip: String, port: i32, thread_pool_size: i32, dir: Arc<HashM
     }
 }
 
-fn stat_wrapper(f: fn(TcpStream, Directory, Arc<HashMap<String, String>>, Arc<ServerStats>) -> Option<(u32, String)>, stream: TcpStream, dir: Directory, resources: Arc<HashMap<String, String>>, stats: Arc<ServerStats>) -> Option<RequestResult> {
+fn stat_wrapper(f: fn(TcpStream, StaticFiles, Arc<HashMap<String, String>>, Arc<ServerStats>) -> Option<(u32, String)>, stream: TcpStream, dir: StaticFiles, resources: Arc<HashMap<String, String>>, stats: Arc<ServerStats>) -> Option<RequestResult> {
     let date = Utc::now().naive_local();
     let start = Instant::now();
     let connection_result = f(stream, dir, resources, stats);
     let duration = start.elapsed().as_millis();
 
     match connection_result {
-        Some(res) => Some(RequestResult { response_code: res.0, response_time: duration, time: date, requested_resource: res.1}),
+        Some(res) => Some(RequestResult { response_code: res.0, duration: duration, time: date, requested_resource: res.1}),
         None => None
     }
 }
 
-fn handle_connection(mut stream: TcpStream, dir: Directory, resources: Arc<HashMap<String, String>>, stats: Arc<ServerStats>) -> Option<(u32, String)> {
+fn handle_connection(mut stream: TcpStream, dir: StaticFiles, resources: Arc<HashMap<String, String>>, stats: Arc<ServerStats>) -> Option<(u32, String)> {
     let mut buffer = [0; 2048];
 
     if let Err(_) = stream.read(&mut buffer) {

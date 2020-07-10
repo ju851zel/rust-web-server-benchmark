@@ -1,6 +1,7 @@
 use std::sync::{mpsc::Sender, mpsc::channel, mpsc::Receiver, Arc, Mutex};
 use std::thread;
 use chrono::{Date, Utc, NaiveDateTime};
+use std::collections::HashMap;
 
 
 #[derive(Debug)]
@@ -19,7 +20,18 @@ pub struct RequestResult {
     pub response_code: u32,
     pub requested_resource: String,
     pub time: NaiveDateTime,
-    pub response_time: u128
+    pub duration: u128
+}
+
+impl RequestResult {
+    pub fn is_successful(&self) -> bool {
+        self.response_code >= 200 && self.response_code < 300
+    }
+}
+
+pub struct ServerFiles {
+    pub static_files: HashMap<String, Vec<u8>>,
+    pub dynamic_files: HashMap<String, String>
 }
 
 impl ThreadPool {

@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::path::Path;
 use std::ffi::OsStr;
 use std::fs;
-use crate::Directory;
+use crate::StaticFiles;
 use std::sync::Arc;
 
 #[derive(Debug)]
