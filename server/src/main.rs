@@ -50,17 +50,17 @@ fn main() {
         "threaded" => {
             println!("Server is a {} server\nServer is listening on {}:{}",
                      type_.cyan(), ip.to_string().cyan(), port.to_string().cyan());
-            threaded::start_server(ip, port, threads, static_files.clone(), dynamic_files);
+            threaded::start_server(ip, port, threads, static_files, dynamic_files);
         }
         "event_loop" => {
             println!("Server is a {} server\n Server is listening on {}:{}",
                      type_.cyan(), ip.to_string().cyan(), port.to_string().cyan());
-            event_loop::start_server(ip, port, dir)
+            event_loop::start_server(ip, port, static_files)
         }
         "rouille" => {
             println!("Server is a {} server\n Server is listening on {}:{}",
                      type_.cyan(), ip.to_string().cyan(), port.to_string().cyan());
-            rouille::start_server(ip, port, static_files.clone());//todo
+            rouille::start_server(ip, port, static_files);//todo
         }
         _ => {
             let ip_t = ip.clone();
@@ -82,7 +82,7 @@ fn main() {
                      port_e = (port_e).to_string().cyan(),
                      port = (port).to_string().cyan());
 
-            rouille::start_server(ip, port, dir);
+            rouille::start_server(ip, port, static_files);
         }
     };
 }
