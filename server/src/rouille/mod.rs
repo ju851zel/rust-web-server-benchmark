@@ -1,4 +1,4 @@
-use crate::Directory;
+use crate::StaticFiles;
 use std::thread;
 use std::net::TcpListener;
 use crate::response::{Response, send_response};
@@ -6,7 +6,7 @@ use std::io::{ Read};
 use crate::request::parse_request;
 
 
-pub fn start_server(ip: String, port: i32, dir: Directory) {
+pub fn start_server(ip: String, port: i32, dir: StaticFiles) {
     let address = format!("{}:{}", ip, port);
 
     let listener = match TcpListener::bind(address) {

@@ -1,7 +1,6 @@
 use std::sync::{mpsc::Sender, mpsc::channel, mpsc::Receiver, Arc, Mutex};
 use std::thread;
-use chrono::{Date, Utc, NaiveDateTime};
-use std::collections::HashMap;
+use chrono::NaiveDateTime;
 use crate::{StaticFiles, DynamicFiles};
 
 
@@ -33,6 +32,8 @@ impl RequestResult {
     }
 }
 
+/// Wrapper for both static and dynamic files the server is able to serve
+#[derive(Clone)]
 pub struct ServerFiles {
     pub static_files: StaticFiles,
     pub dynamic_files: DynamicFiles

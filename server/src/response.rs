@@ -3,7 +3,7 @@ use std::path::Path;
 use std::ffi::OsStr;
 use std::fs;
 use std::sync::Arc;
-use crate::{Buffer, StaticFiles};
+use crate::{Buffer, StaticFiles, DynamicFiles};
 use crate::request::parse_request;
 use std::net::TcpStream;
 use std::io::Write;
@@ -90,17 +90,14 @@ impl Response {
     }
 
     /// Creates a default error page response
-    pub fn dynamic_error_response(&mut self, error_message: String, resources: Arc<HashMap<String, String>>) {
-        let mut map = HashMap::new();
-        let error_code: &str = &self.response_identifiers.method.id.to_string();
-        let error_code_full: &str = &format!("{} {}", error_code, self.response_identifiers.method.name);
-
-        map.insert("{{ErrorCode}}", error_code_full);
-        map.insert("{{ErrorMessage}}", &error_message);
-
-        let mut a = resources.get("/error_page.html").unwrap().to_string();
-
-        insert_dynamic_html(self, a, map);
+    pub fn dynamic_error_response(&mut self, error_message: String, files: DynamicFiles) {
+        match files.get("/error_page.html") {
+            Some(resource) => {
+                self.add_content_type("_.html".to_string());
+                self.body = build_error_html(self, resource.to_string(), error_message);
+            },
+            None => return
+        }
     }
 
     /// Makes the response into a sendable byte vector
@@ -150,14 +147,14 @@ impl Response {
 }
 
 /// Creates a response according to the requested ressource
-pub fn create_response(buffer: Buffer, files: Directory) -> Vec<u8> {
+pub fn create_response(buffer: Buffer, files: StaticFiles) -> Vec<u8> {
     let mut response = Response::default_ok();
 
     let request = parse_request(buffer.to_vec());
     let request = match request {
         Ok(request) => request,
         Err(error) => {
-            println!("{}", error.description().to_string());
+            println!("{}", error);
             return Response::default_bad_request().make_sendable();
         }
     };
@@ -175,15 +172,15 @@ pub fn create_response(buffer: Buffer, files: Directory) -> Vec<u8> {
     response.make_sendable()
 }
 
-// todo comment what does it do after reimplementing the fs::read_string into correct
-pub fn insert_dynamic_html(mut response: &mut Response, mut resource: String, templating_replacements: HashMap<&str, &str>) {
-    response.add_content_type("_.html".to_string());
+/// Dynamically replaces placeholders in the error_page resource with the code and description
+pub fn build_error_html(response: &mut Response, mut resource: String, error_message: String) -> Vec<u8> {
+    let error_code: &str = &response.response_identifiers.method.id.to_string();
+    let error_code_full: &str = &format!("{} {}", error_code, response.response_identifiers.method.name);
 
-    for replacements in templating_replacements {
-        resource = resource.replace(replacements.0, &replacements.1);
-    }
+    resource = resource.replace("{{ErrorCode}}", error_code_full);
+    resource = resource.replace("{{ErrorMessage}}", &error_message);
 
-    response.body = resource.as_bytes().to_vec();
+    resource.as_bytes().to_vec()
 }
 
 /// Send a response to the requester

@@ -3,6 +3,7 @@ use crate::threaded::server::{ServerStats, RequestResult};
 use std::sync::{Arc, MutexGuard};
 use std::collections::HashMap;
 
+/// A wrapper for extended stats about the server
 #[derive(Debug)]
 struct ResultView {
     request_successes: Vec<bool>,
@@ -23,6 +24,7 @@ impl ResultView {
     }
 }
 
+/// A struct to represent which path has been requested how many times
 #[derive(Debug)]
 struct PathCount {
     path: String,
@@ -35,13 +37,13 @@ impl PathCount {
     }
 }
 
+/// Endpoint returns the accumulated stats about the server via html file
 pub fn stats_response(stats: Arc<ServerStats>, resources: Arc<HashMap<String, String>>) -> Result<Response, Response> {
     let results = stats.request_results.lock().unwrap();
 
     let request_successes: Vec<bool> = results.iter().map(|result| result.is_successful()).collect();
 
     let mut path_counts: HashMap<String, PathCount> = HashMap::new();
-
     &results.iter().for_each(|result| {
         let resource = (&result.requested_resource).to_string();
         path_counts.entry(resource.to_string()).or_insert(PathCount{path: resource.to_string(), num_requested: 0}).increase_num();
@@ -58,6 +60,7 @@ pub fn stats_response(stats: Arc<ServerStats>, resources: Arc<HashMap<String, St
     Ok(response)
 }
 
+/// Builds the html file to display the stats dynamically
 fn build_html(resources: Arc<HashMap<String, String>>, results: MutexGuard<Vec<RequestResult>>, result_view: ResultView) -> String {
     let mut html = resources.get("/stats.html").unwrap().to_string();
 
