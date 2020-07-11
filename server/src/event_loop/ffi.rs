@@ -1,19 +1,19 @@
 use std::net::{TcpStream, TcpListener};
 use std::os::unix::io::AsRawFd;
-use crate::{Directory, Buffer};
 use crate::event_loop::unsafe_c::{Timespec, create_kqueue, put_kevent_in_kqueue, poll_kevents_from_q, create_k_read_event, create_k_write_event, KeventInternal};
+use crate::{Buffer, StaticFiles};
 
 /// The Queue holding events and a reference to the kqueue
 pub struct Queue<T> where T: GeneralEvent {
     pub events: Vec<T>,
     pub wait_timeout: Timespec,
-    pub dir: Directory,
+    pub dir: StaticFiles,
     pub fd: i32,
 }
 
 impl<T> Queue<T> where T: GeneralEvent {
     /// Creates a new k queue
-    pub fn new(dir: Directory) -> Result<Queue<T>, String> {
+    pub fn new(dir: StaticFiles) -> Result<Queue<T>, String> {
         Ok(Self {
             events: vec![],
             wait_timeout: Timespec::zero(),

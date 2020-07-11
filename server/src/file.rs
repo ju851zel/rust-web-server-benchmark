@@ -3,6 +3,7 @@ use std::fs::read_dir;
 use std::io::{Error as IoError, ErrorKind};
 use std::path::{Path, PathBuf};
 use std::{env, fs};
+use std::error::Error;
 
 
 /// Loads all static files into memory
@@ -18,13 +19,13 @@ pub fn load_static_files(dir: &Path) -> Result<HashMap<String, Vec<u8>>, String>
 /// Loads the files from the dynamic resources directory into memory
 pub fn load_dynamic_files() -> Result<HashMap<String, String>, String> {
     let current_dir = get_current_dir()?;
-    let resources_dir = PathBuf::from(string_from_path(current_dir)? + "/src/threaded/resources/templates");
+    let resources_dir = PathBuf::from(string_from_path(current_dir)? + "/resources/templates");
 
     let mut result = HashMap::new();
 
     let files = match fs::read_dir(&resources_dir) {
         Ok(files) => files,
-        Err(_) => return Err("Could not read dynamic files from resources.".to_string())
+        Err(_) => return Err("Could not read dynamic files from resources. Make sure the directory lays in the current directory".to_string())
     };
 
     for entry in files {
@@ -40,7 +41,7 @@ pub fn load_dynamic_files() -> Result<HashMap<String, String>, String> {
                         Some(file_name) => format!("/{}", file_name),
                         None => continue
                     }
-                },
+                }
                 None => continue
             };
 
@@ -56,15 +57,21 @@ pub fn load_dynamic_files() -> Result<HashMap<String, String>, String> {
 /// Loads the files in the path from the filesystem into memory
 fn load_directory(path: &Path) -> Result<HashMap<String, Vec<u8>>, String> {
     return match get_all_files_in_dir(path) {
-        Err(_) => Err("Could not read files in directory.".to_string()),
+        Err(error) => {
+            let err = format!("Could not read files in path {}: {}", path.display(), error);
+            Err(err)
+        }
         Ok(list) => Ok(list)
-    }
+    };
 }
 
 /// Loads the files from the static resources directory into memory
 fn load_static_resources() -> Result<HashMap<String, Vec<u8>>, String> {
     let current_dir = get_current_dir()?;
-    load_directory(&PathBuf::from(string_from_path(current_dir)?  + "/src/threaded/resources/static"))
+    match load_directory(&PathBuf::from(string_from_path(current_dir)? + "/resources/static")) {
+        Ok(ok) => return Ok(ok),
+        Err(err) => return Err("Make sure the resources folder exists in the current directory".to_string())
+    }
 }
 
 /// Get all files in a directory.

@@ -1,8 +1,6 @@
 use std::collections::HashMap;
 use std::path::Path;
 use std::ffi::OsStr;
-use std::fs;
-use std::sync::Arc;
 use crate::{Buffer, StaticFiles, DynamicFiles};
 use crate::request::parse_request;
 use std::net::TcpStream;

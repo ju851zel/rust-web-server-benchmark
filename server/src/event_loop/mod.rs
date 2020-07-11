@@ -2,7 +2,7 @@ use crate::response::{Response, create_response};
 use crate::event_loop::ffi::{Queue, Event, ListenerEvent};
 use std::net::{TcpListener};
 use std::io::{Read, Write};
-use crate::{Directory, Buffer};
+use crate::{Buffer, StaticFiles};
 
 mod ffi;
 mod unsafe_c;
@@ -17,7 +17,7 @@ mod unsafe_c;
 /// It is always actively looking for work, but when work arrives, but would block,
 /// it continues on other work.
 /// In a future update it will even wait passively, if no work is available.
-pub fn start_server(ip: String, port: i32, dir: Directory) {
+pub fn start_server(ip: String, port: i32, dir: StaticFiles) {
     let address = format!("{}:{}", ip, port);
 
     let (mut incoming_q, mut reading_q, mut writing_q) = match create_qs(dir) {
@@ -62,7 +62,7 @@ pub fn start_server(ip: String, port: i32, dir: Directory) {
 ///
 /// Creates the incoming, writing and reading queues.
 /// When an error occurs, the server shuts down.
-fn create_qs(dir: Directory) -> Result<(Queue<ListenerEvent>, Queue<Event>, Queue<Event>), String> {
+fn create_qs(dir: StaticFiles) -> Result<(Queue<ListenerEvent>, Queue<Event>, Queue<Event>), String> {
     let incoming_q = Queue::new(dir.clone())?;
     let reading_q = Queue::new(dir.clone())?;
     let writing_q = Queue::new(dir)?;
