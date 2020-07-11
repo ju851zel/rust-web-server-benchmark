@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css" integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
+</head>
+<body>
+<div class="container">
+    <div class="row justify-content-md-center">
+        <div class="col">
+            <h3 style="display:inline;"><span class="badge badge-primary">Number of total requests <span class="badge badge-secondary">{{num_total}}</span></span></h3>
+            <h3 style="display:inline;"><span class="badge badge-success">Number of successful requests <span class="badge badge-secondary">{{num_successful}}</span></span></h3>
+            <h3 style="display:inline;"><span class="badge badge-danger">Number of unsuccessful requests <span class="badge badge-secondary">{{num_unsuccessful}}</span></span></h3>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-1"></div>
+        <div class="col-8">
+            <table class="table table-striped">
+                <thead>
+                <tr>
+                    <th scope="col">Time</th>
+                    <th scope="col">Path</th>
+                    <th scope="col">Code</th>
+                    <th scope="col">Duration(ms)</th>
+                </tr>
+                </thead>
+                <tbody>
+                    {{result_entries}}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+</body>
+</html>
