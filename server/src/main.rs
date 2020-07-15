@@ -4,7 +4,7 @@ use std::thread;
 use std::path::Path;
 
 mod threaded;
-mod rouille;
+mod single_thread;
 mod event_loop;
 mod request;
 mod response;
@@ -57,10 +57,10 @@ fn main() {
                      type_.cyan(), ip.to_string().cyan(), port.to_string().cyan());
             event_loop::start_server(ip, port, static_files)
         }
-        "rouille" => {
+        "single_thread" => {
             println!("Server is a {} server\n Server is listening on {}:{}",
                      type_.cyan(), ip.to_string().cyan(), port.to_string().cyan());
-            rouille::start_server(ip, port, static_files);//todo
+            single_thread::start_server(ip, port, static_files);//todo
         }
         _ => {
             let ip_t = ip.clone();
@@ -76,13 +76,13 @@ fn main() {
             println!("Starting all servers\n\
                       Threaded server is listening on {ip}:{port_t}\n\
                       Event loop server is listening on {ip}:{port_e}\n\
-                      Rouille server is listening on {ip}:{port}",
+                      Single thread server is listening on {ip}:{port}",
                      ip = ip.to_string().cyan(),
                      port_t = (port_t).to_string().cyan(),
                      port_e = (port_e).to_string().cyan(),
                      port = (port).to_string().cyan());
 
-            rouille::start_server(ip, port, static_files);
+            single_thread::start_server(ip, port, static_files);
         }
     };
 }

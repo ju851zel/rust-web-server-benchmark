@@ -57,7 +57,6 @@ pub fn start_server(ip: String, port: i32, dir: StaticFiles) {
                     return;
                 }
             };
-            println!("sending response");
             send_response(connection, &mut response);
         }) {
             Err(_) => {

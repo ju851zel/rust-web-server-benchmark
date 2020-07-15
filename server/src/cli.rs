@@ -74,7 +74,7 @@ fn create_matchers() -> ArgMatches<'static> {
             .default_value("all")
             .validator(|value| valid_type(value))
             .value_name("TYPE")
-            .help("The type of the server [threaded|event_loop|rouille|all]. Event loop is only supported on BSD systems, and eventually linux.")
+            .help("The type of the server [threaded|event_loop|single_thread|all]. Event loop is only supported on BSD systems, and eventually linux.")
             .takes_value(true))
         .get_matches();
 }
@@ -92,7 +92,7 @@ fn valid_port(string: String) -> Result<(), String> {
 fn valid_type(s: String) -> Result<(), String> {
     match &s[..] {
         "threaded" => {}
-        "rouille" => {}
+        "single_thread" => {}
         "event_loop" | "all" => {
             match std::env::consts::OS {
                 "macos" => {}
@@ -101,7 +101,7 @@ fn valid_type(s: String) -> Result<(), String> {
                 _ => return Err("Event loop is only supported on BSD systems, and eventually linux.".to_string())
             }
         }
-        _ => return Err("Please select a server type [threaded|event_loop|rouille]".to_string())
+        _ => return Err("Please select a server type [threaded|event_loop|single_thread]".to_string())
     }
     return Ok(());
 }

@@ -27,18 +27,26 @@ The penetrator accepts the following command line arguments. Again use -h to see
 How to build/run the projekt
 
 Build the webserver and penetrator binary
-```rust
+```
 cargo run build
 ```
 Run the webserver
-```rust
-cargo run --bin webserver -- --port 9000 --ip_address "127.0.0.1" --directory "path/to/fir/to/serve" --server_type "threaded"
+```
+cargo run --release --bin webserver -- --port 9000 --ip_address "127.0.0.1" --directory "path/to/fir/to/serve" --server_type "threaded"
 ```
 Run the penetrator
-```rust
-cargo run --bin penetrator -- --url "http://www,google.de" --number_of_requests 10```
+```
+cargo run --release --bin penetrator -- --url "http://www,google.de" --number_of_requests 10```
 ```
 Create the docs
 ```
 cargo doc --open --no-deps
+```
+Build the webserver
+```
+cargo build --release --bin webserver
+```
+Build the penetrator
+```
+cargo build --release --bin penetrator
 ```
