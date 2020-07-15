@@ -56,8 +56,8 @@ cargo build --release --bin penetrator
 ```
 
 ## Self criticicm
-- a more strict way what we want to archive could have helped at the beginning.
-- the non blocking server seems not to work to 100%, unsafe rust makes it harder, but was good to try out and get to know
-- some todos are still in there, e.g. to small buffer for very large html sites
+- a stricter outline of our goals and what we wanted to achieve could have helped at the beginning.
+- the non blocking server seems not to work to 100%; using unsafe rust makes it more difficult, though was good to try out and learn about nonetheless
+- some todos are still in there, e.g. too small buffer for very large html sites
 - the multi threaded webserver with the stats endpoint works well and we really like it
 - the audio quality of the video does not meet our own requirements
