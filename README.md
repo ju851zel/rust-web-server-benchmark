@@ -5,8 +5,8 @@ The projekt in "Programmieren in Rust". By:
 
 The idea is to build two binaries. One including the webservers and one including the "penetrator".
 The webserver binary includes the following servers:
-- a multi threaded webserver, build arround a threadpool
-- a multi threaded webserver, build with one thread per request
+- a multi threaded webserver, build arround a threadpool, this is our main server the rest is only for comparison
+- a webserver, build with one thread per request
 - a single threded non blocking webserver, (kind of an event queue), only working on BSD systems!!!
 
 The webserver binary accepts different command line arguments. Run the server with -h to see all options. e.g:
@@ -23,8 +23,12 @@ The penetrator accepts the following command line arguments. Again use -h to see
 - the URL to send the requests to
 - the number of requests that should be sent
 
+## How to build/run the projekt
 
-How to build/run the projekt
+General information:
+- Remember the resources directory must lay in the same directory as the binary
+- when running the webserver/penetrator have in mind the maximum of open files of your OS/shell session.
+
 
 Build the webserver and penetrator binary
 ```
@@ -32,11 +36,11 @@ cargo run build
 ```
 Run the webserver
 ```
-cargo run --release --bin webserver -- --port 9000 --ip_address "127.0.0.1" --directory "path/to/fir/to/serve" --server_type "threaded"
+cargo run --release --bin webserver -- --port 9000 --ip_address "127.0.0.1" --directory "path/to/files/to/serve" --server_type "threaded"
 ```
 Run the penetrator
 ```
-cargo run --release --bin penetrator -- --url "http://www,google.de" --number_of_requests 10```
+cargo run --release --bin penetrator -- --url "http://www,google.de" --number_of_requests 10
 ```
 Create the docs
 ```
@@ -50,3 +54,10 @@ Build the penetrator
 ```
 cargo build --release --bin penetrator
 ```
+
+## Self criticicm
+- a more strict way what we want to archive could have helped at the beginning.
+- the non blocking server seems not to work to 100%, unsafe rust makes it harder, but was good to try out and get to know
+- some todos are still in there, e.g. to small buffer for very large html sites
+- the multi threaded webserver with the stats endpoint works well and we really like it
+- the audio quality of the video does not meet our own requirements
